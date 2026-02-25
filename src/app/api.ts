@@ -183,6 +183,8 @@ export type CatalogSummary = {
   win_no_mg_rate?: number;
   win_with_mg_rate?: number;
   hit_rate?: number;
+  /** Máximo de ciclos por ativo na janela (exibição em probabilisticas). */
+  max_cycles?: number;
 };
 
 export type CatalogResponse = {

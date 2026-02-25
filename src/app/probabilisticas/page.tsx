@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -462,7 +462,7 @@ function DetailsDrawer({
   );
 }
 
-export default function ProbabilisticasPage() {
+function ProbabilisticasContent() {
   const searchParams = useSearchParams();
   const [strategy, setStrategy] = useState("mhi");
   const [windowMinutes, setWindowMinutes] = useState(120);
@@ -997,5 +997,13 @@ export default function ProbabilisticasPage() {
         </Link>
       </nav>
     </div>
+  );
+}
+
+export default function ProbabilisticasPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#9CA3AF]" style={{ background: "linear-gradient(180deg, #060b14 0%, #0b1624 100%)" }}>Carregando...</div>}>
+      <ProbabilisticasContent />
+    </Suspense>
   );
 }
