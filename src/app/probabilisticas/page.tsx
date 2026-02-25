@@ -887,9 +887,9 @@ export default function ProbabilisticasPage() {
                 </p>
                 <p>
                   <span className="text-[#9CA3AF]">Contadores:</span>{" "}
-                  quadrants_checked_total: {rankingResult.debug.quadrants_checked_total ?? 0} — skip_missing_total:{" "}
-                  {rankingResult.debug.skip_missing_total ?? 0} — skip_doji_ref_total:{" "}
-                  {rankingResult.debug.skip_doji_ref_total ?? 0} — setups_total:{" "}
+                  quadrants_checked: {rankingResult.debug.quadrants_checked ?? 0} — skip_missing:{" "}
+                  {rankingResult.debug.skip_missing ?? 0} — skip_doji_v3:{" "}
+                  {rankingResult.debug.skip_doji_v3 ?? 0} — setups_total:{" "}
                   {rankingResult.debug.setups_total ?? rankingResult.debug.total_setups_sum ?? 0}
                 </p>
                 {rankingResult.debug.note && (
