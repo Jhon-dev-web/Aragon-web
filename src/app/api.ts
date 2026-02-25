@@ -45,6 +45,8 @@ export type SignalsAnalyzeResponse = {
   score_call: number;
   score_put: number;
   confluences: Record<string, string>;
+  /** Confiança 0–100; opcional, frontend usa 50 se ausente. */
+  confidence?: number;
 };
 
 export type CatalogMhiResponse = {
