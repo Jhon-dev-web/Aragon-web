@@ -1014,7 +1014,7 @@ export default function ExecutorDashboard() {
           <span className="text-xs">Probabilísticas</span>
         </Link>
         <Link
-          href="/login"
+          href="/executor"
           className="flex flex-col items-center gap-1 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
