@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   fetchCandles,
   fetchSignalsAnalyze,
   fetchHealth,
   fetchAssets,
   getMarketWsUrl,
+  getAuthToken,
   type CandleItem,
   type SignalsAnalyzeResponse,
   type AssetOption,
@@ -106,6 +108,7 @@ export default function Dashboard() {
     candleClose?: number;
   }
 
+  const router = useRouter();
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [asset, setAsset] = useState("");
   const [showOpen, setShowOpen] = useState(true);
@@ -138,6 +141,15 @@ export default function Dashboard() {
       setLoadingCandles(false);
     }
   }, [asset]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = getAuthToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+  }, [router]);
 
   useEffect(() => {
     loadCandles();

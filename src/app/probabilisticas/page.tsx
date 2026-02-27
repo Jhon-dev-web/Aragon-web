@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   fetchCatalogRanking,
   fetchCycles,
   getCyclesRequestUrl,
   fetchHealth,
+  getAuthToken,
+  getCurrentUserEmail,
   type CatalogResponse,
   type CatalogByAsset,
   type CyclesResponse,
   type CycleItem,
 } from "../api";
+import { useBroker } from "../context/BrokerContext";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -35,6 +38,78 @@ const MG_OPTIONS = [
   { value: "off", label: "OFF" },
   { value: "mg1", label: "MG1" },
 ];
+
+type BrokerConnectFormProps = {
+  loading: boolean;
+  error: string | null;
+  onConnect: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+};
+
+function BrokerConnectForm({ loading, error, onConnect }: BrokerConnectFormProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    if (!email || !password) {
+      setLocalError("Informe email e senha da corretora.");
+      return;
+    }
+    const res = await onConnect(email.trim(), password);
+    if (!res.success) {
+      setLocalError(res.error ?? "Falha ao conectar na corretora.");
+    }
+  };
+
+  const finalError = localError || error;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <label className="block">
+        <span className="block text-xs text-[#9CA3AF] mb-1">Email (corretora)</span>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setLocalError(null);
+          }}
+          className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none placeholder:text-[#6B7280]"
+          autoComplete="email"
+          placeholder="seu@email.com"
+        />
+      </label>
+      <label className="block">
+        <span className="block text-xs text-[#9CA3AF] mb-1">Senha (corretora)</span>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setLocalError(null);
+          }}
+          className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none placeholder:text-[#6B7280]"
+          autoComplete="current-password"
+          placeholder="••••••••"
+        />
+      </label>
+      {finalError && (
+        <p className="text-xs text-red-400 bg-red-900/20 border border-red-700/50 rounded-lg px-3 py-2">
+          {finalError}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full mt-1 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors"
+      >
+        {loading ? "Conectando…" : "Conectar corretora"}
+      </button>
+    </form>
+  );
+}
 
 function isOtc(asset: string): boolean {
   return asset.toUpperCase().endsWith("-OTC");
@@ -463,6 +538,7 @@ function DetailsDrawer({
 }
 
 function ProbabilisticasContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [strategy, setStrategy] = useState("mhi");
   const [windowMinutes, setWindowMinutes] = useState(120);
@@ -487,6 +563,16 @@ function ProbabilisticasContent() {
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(60);
   const [autoPausedByError, setAutoPausedByError] = useState(false);
+  const broker = useBroker();
+  const [showBrokerModal, setShowBrokerModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = getAuthToken();
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -626,6 +712,62 @@ function ProbabilisticasContent() {
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
+      {showBrokerModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-[#E5E7EB]">Conta da corretora</h2>
+                <p className="text-xs text-[#9CA3AF]">
+                  Conecte sua conta para usar sinais e executor.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBrokerModal(false)}
+                className="p-2 rounded-lg text-[#9CA3AF] hover:bg-[#1F2937]"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            {broker.connected ? (
+              <div className="space-y-4">
+                <p className="text-sm text-[#9CA3AF]">
+                  Conta conectada. Tipo:{" "}
+                  <span className="font-medium text-[#E5E7EB]">
+                    {broker.accountType || "desconhecido"}
+                  </span>{" "}
+                  · Saldo:{" "}
+                  <span className="font-medium text-[#22C55E]">
+                    {broker.balance != null ? Number(broker.balance).toFixed(2) : "--"}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    broker.disconnect().finally(() => setShowBrokerModal(false));
+                  }}
+                  className="w-full px-4 py-2.5 rounded-lg text-sm font-medium border border-[#374151] text-[#E5E7EB] hover:bg-[#1F2937]"
+                >
+                  Desconectar corretora
+                </button>
+              </div>
+            ) : (
+              <BrokerConnectForm
+                loading={broker.loading}
+                error={broker.error}
+                onConnect={async (email, password) => {
+                  const res = await broker.connect(email, password);
+                  if (res.success) setShowBrokerModal(false);
+                  return res;
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#1F2937] shrink-0">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
@@ -636,6 +778,29 @@ function ProbabilisticasContent() {
             <p className="text-xs text-[#9CA3AF]">Trading Intelligence Platform</p>
           </div>
         </Link>
+        <div className="flex items-center gap-3 ml-auto">
+          <button
+            type="button"
+            onClick={() => setShowBrokerModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111827] border border-[#1F2937] hover:border-[#2563EB] transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold">
+              {(getCurrentUserEmail() || "U")[0]?.toUpperCase()}
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-xs text-[#E5E7EB] truncate max-w-[120px]">
+                {getCurrentUserEmail() || "Usuário"}
+              </span>
+              <span className="text-[10px] text-[#9CA3AF]">
+                {broker.loading
+                  ? "Verificando corretora…"
+                  : broker.connected
+                  ? "Corretora conectada"
+                  : "Conectar corretora"}
+              </span>
+            </div>
+          </button>
+        </div>
       </header>
 
       {/* Topbar fixo com filtros */}

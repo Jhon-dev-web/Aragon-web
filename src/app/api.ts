@@ -6,6 +6,49 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "/api";
 
+// ----- Auth token (JWT) -----
+const TOKEN_STORAGE_KEY = "aa_auth_token";
+const USER_EMAIL_KEY = "aa_user_email";
+
+let inMemoryToken: string | null = null;
+
+export function setAuthToken(token: string | null, email?: string) {
+  inMemoryToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      if (email) {
+        window.localStorage.setItem(USER_EMAIL_KEY, email.toLowerCase());
+      }
+    } else {
+      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      window.localStorage.removeItem(USER_EMAIL_KEY);
+    }
+  }
+}
+
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return inMemoryToken;
+  if (inMemoryToken) return inMemoryToken;
+  const stored = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  inMemoryToken = stored;
+  return stored;
+}
+
+export function getCurrentUserEmail(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(USER_EMAIL_KEY);
+}
+
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  const token = getAuthToken();
+  const base: HeadersInit = extra ? { ...extra } : {};
+  if (token) {
+    return { ...base, Authorization: `Bearer ${token}` };
+  }
+  return base;
+}
+
 /** URL do WebSocket de mercado (candles em tempo quase real). Fallback: null = só atualização manual. */
 export function getMarketWsUrl(): string | null {
   if (typeof window === "undefined") return null;
@@ -108,7 +151,7 @@ export async function fetchCandles(
 ): Promise<CandleItem[]> {
   const r = await fetchWithTimeout(
     `${API_BASE}/candles/last?asset=${encodeURIComponent(asset)}&n=${n}`,
-    { signal, timeoutMs: FETCH_TIMEOUT_MS }
+    { signal, timeoutMs: FETCH_TIMEOUT_MS, headers: authHeaders() }
   );
   if (!r.ok) throw new Error(await r.text());
   return r.json();
@@ -117,7 +160,7 @@ export async function fetchCandles(
 export async function fetchSignal(asset: string, strategy: "aggressive" | "normal", window_sec: number = 2): Promise<SignalResponse> {
   const r = await fetch(`${API_BASE}/signal`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ asset, strategy, window_sec }),
   });
   if (!r.ok) throw new Error(await r.text());
@@ -128,7 +171,7 @@ export async function fetchSignal(asset: string, strategy: "aggressive" | "norma
 export async function fetchSignalsAnalyze(symbol: string, timeframe: number = 60): Promise<SignalsAnalyzeResponse> {
   const r = await fetch(`${API_BASE}/signals/analyze`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ symbol, timeframe }),
   });
   if (!r.ok) throw new Error(await r.text());
@@ -138,7 +181,7 @@ export async function fetchSignalsAnalyze(symbol: string, timeframe: number = 60
 export async function fetchCatalogMhi(asset: string, minutes: number = 120): Promise<CatalogMhiResponse> {
   const r = await fetch(`${API_BASE}/catalog/mhi`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ asset, minutes }),
   });
   if (!r.ok) throw new Error(await r.text());
@@ -271,7 +314,7 @@ export async function fetchCatalogRanking(
   try {
     r = await fetch(`${API_BASE}/catalog`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -305,7 +348,7 @@ export async function fetchCatalogRanking(
       // keep detail as text
     }
     if (r.status === 503)
-      throw new Error(`Serviço indisponível: ${detail}. Conecte à corretora (aba Executor) ou configure BULLEX_EMAIL/BULLEX_PASSWORD no .env do servidor.`);
+      throw new Error(`Serviço indisponível: ${detail}. Verifique conexão com a corretora no perfil (topo direito).`);
     throw new Error(`HTTP ${r.status}: ${detail}`);
   }
   return r.json();
@@ -402,7 +445,7 @@ export async function fetchCycles(params: {
     console.log("[fetchCycles] request URL:", url);
   }
 
-  const r = await fetch(url);
+  const r = await fetch(url, { headers: authHeaders() });
 
   if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
@@ -467,7 +510,9 @@ export type ExecutorRiskConfig = {
 };
 
 export async function fetchExecutorStatus(): Promise<ExecutorStatus> {
-  const r = await fetch(`${API_BASE}/executor/status`);
+  const r = await fetch(`${API_BASE}/executor/status`, {
+    headers: authHeaders(),
+  });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -475,7 +520,7 @@ export async function fetchExecutorStatus(): Promise<ExecutorStatus> {
 export async function executorStart(riskConfig?: ExecutorRiskConfig): Promise<{ ok: boolean; message: string }> {
   const r = await fetch(`${API_BASE}/executor/start`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(riskConfig ? { riskConfig } : {}),
   });
   if (!r.ok) throw new Error(await r.text());
@@ -483,13 +528,18 @@ export async function executorStart(riskConfig?: ExecutorRiskConfig): Promise<{ 
 }
 
 export async function executorStop(): Promise<{ ok: boolean; message: string }> {
-  const r = await fetch(`${API_BASE}/executor/stop`, { method: "POST" });
+  const r = await fetch(`${API_BASE}/executor/stop`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 
 export async function fetchExecutorTrades(limit = 50): Promise<{ trades: ExecutorTrade[] }> {
-  const r = await fetch(`${API_BASE}/executor/trades?limit=${limit}`);
+  const r = await fetch(`${API_BASE}/executor/trades?limit=${limit}`, {
+    headers: authHeaders(),
+  });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -498,7 +548,7 @@ export async function fetchExecutorLogs(limit = 50, tradeId?: string): Promise<{
   const url = tradeId
     ? `${API_BASE}/executor/logs?limit=${limit}&tradeId=${encodeURIComponent(tradeId)}`
     : `${API_BASE}/executor/logs?limit=${limit}`;
-  const r = await fetch(url);
+  const r = await fetch(url, { headers: authHeaders() });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -529,7 +579,7 @@ export async function executorExecute(params: {
 }): Promise<ExecutorExecuteResponse> {
   const r = await fetch(`${API_BASE}/executor/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       symbol: params.symbol,
       direction: params.direction,
@@ -560,7 +610,9 @@ export type BrokerConnectResponse = {
 };
 
 export async function fetchBrokerStatus(): Promise<BrokerStatus> {
-  const r = await fetch(`${API_BASE}/broker/status`);
+  const r = await fetch(`${API_BASE}/broker/status`, {
+    headers: authHeaders(),
+  });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -571,7 +623,7 @@ export async function brokerConnect(body: {
 }): Promise<BrokerConnectResponse> {
   const r = await fetch(`${API_BASE}/broker/connect`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!r.ok) {
@@ -588,18 +640,72 @@ export async function brokerConnect(body: {
 }
 
 export async function brokerDisconnect(): Promise<void> {
-  const r = await fetch(`${API_BASE}/broker/disconnect`, { method: "POST" });
+  const r = await fetch(`${API_BASE}/broker/disconnect`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
   if (!r.ok) {
     // eslint-disable-next-line no-console
     console.warn("brokerDisconnect failed", r.status);
   }
 }
 
+// ----- Auth (multi-tenant) -----
+export type AuthTokenResponse = {
+  access_token: string;
+  token_type: string;
+  user_id: string;
+};
+
+export async function authLogin(email: string, password: string): Promise<AuthTokenResponse> {
+  const r = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    let detail = text;
+    try {
+      const j = JSON.parse(text) as any;
+      detail = j.detail ?? j.error ?? j.message ?? text;
+    } catch {
+      // ignore
+    }
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  const data = (await r.json()) as AuthTokenResponse;
+  setAuthToken(data.access_token, email);
+  return data;
+}
+
+export async function authRegister(email: string, password: string): Promise<AuthTokenResponse> {
+  const r = await fetch(`${API_BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    let detail = text;
+    try {
+      const j = JSON.parse(text) as any;
+      detail = j.detail ?? j.error ?? j.message ?? text;
+    } catch {
+      // ignore
+    }
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  const data = (await r.json()) as AuthTokenResponse;
+  setAuthToken(data.access_token, email);
+  return data;
+}
+
 // ----- Ativos (compartilhado Análise + Probabilísticas) -----
 /** Lista única de ativos da corretora. GET {API_BASE}/assets. Ordenada por symbol. */
 export async function fetchAssets(): Promise<AssetOption[]> {
   const url = `${API_BASE}/assets`;
-  const r = await fetch(url);
+  const r = await fetch(url, { headers: authHeaders() });
   if (!r.ok) {
     const body = await r.json().catch(() => ({} as Record<string, unknown>));
     const details =

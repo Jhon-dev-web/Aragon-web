@@ -1,36 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { brokerConnect } from "../api";
+import { authLogin, authRegister, getAuthToken } from "../api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleConnect = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = getAuthToken();
+    if (token) {
+      router.replace("/probabilisticas");
+    }
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     const em = email.trim();
     const pw = password;
     if (!em || !pw) {
-      setError("Preencha email e senha da corretora.");
+      setError("Preencha email e senha.");
       return;
     }
     setLoading(true);
     try {
-      const res = await brokerConnect({ email: em, password: pw });
-      if (res.success && res.connected) {
-        router.push("/probabilisticas");
-        return;
+      if (mode === "login") {
+        await authLogin(em, pw);
+      } else {
+        await authRegister(em, pw);
       }
-      setError(res.connected ? "Conectado, mas resposta inesperada." : "Falha ao conectar na corretora.");
+      router.replace("/probabilisticas");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao conectar. Verifique email e senha.");
+      setError(err instanceof Error ? err.message : "Erro ao autenticar. Verifique email e senha.");
     } finally {
       setLoading(false);
     }
@@ -54,14 +63,16 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 shadow-[0_0_24px_rgba(37,99,235,0.08)]">
             <h2 className="text-lg font-semibold text-[#E5E7EB] mb-1">
-              Conectar à corretora
+              {mode === "login" ? "Entrar no ARAGON" : "Criar conta no ARAGON"}
             </h2>
             <p className="text-sm text-[#9CA3AF] mb-5">
-              Use o email e a senha da sua conta na corretora (Bullex) para conectar. Não há cadastro no ARAGON — apenas conecte com as credenciais da corretora.
+              {mode === "login"
+                ? "Use seu email e senha para acessar o painel de análises."
+                : "Crie sua conta ARAGON para acessar o painel de análises."}
             </p>
-            <form onSubmit={handleConnect} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <label className="block">
-                <span className="block text-xs text-[#9CA3AF] mb-1">Email (corretora)</span>
+                <span className="block text-xs text-[#9CA3AF] mb-1">Email</span>
                 <input
                   type="email"
                   value={email}
@@ -72,7 +83,7 @@ export default function LoginPage() {
                 />
               </label>
               <label className="block">
-                <span className="block text-xs text-[#9CA3AF] mb-1">Senha (corretora)</span>
+                <span className="block text-xs text-[#9CA3AF] mb-1">Senha</span>
                 <input
                   type="password"
                   value={password}
@@ -95,13 +106,44 @@ export default function LoginPage() {
                 {loading ? (
                   <span className="inline-flex items-center justify-center gap-2">
                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Conectando…
+                    {mode === "login" ? "Entrando…" : "Criando conta…"}
                   </span>
                 ) : (
-                  "Conectar"
+                  mode === "login" ? "Entrar" : "Criar conta"
                 )}
               </button>
             </form>
+            <p className="mt-4 text-center text-sm text-[#9CA3AF]">
+              {mode === "login" ? (
+                <>
+                  Ainda não tem conta?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("register");
+                      setError("");
+                    }}
+                    className="text-[#3B82F6] hover:underline font-medium"
+                  >
+                    Criar conta
+                  </button>
+                </>
+              ) : (
+                <>
+                  Já tem conta?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setError("");
+                    }}
+                    className="text-[#3B82F6] hover:underline font-medium"
+                  >
+                    Fazer login
+                  </button>
+                </>
+              )}
+            </p>
             <p className="mt-4 text-center text-sm text-[#9CA3AF]">
               <Link href="/probabilisticas" className="text-[#3B82F6] hover:underline font-medium">
                 Voltar para Probabilísticas
