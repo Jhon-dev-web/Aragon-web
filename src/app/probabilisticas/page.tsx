@@ -973,20 +973,38 @@ function ProbabilisticasContent() {
             </button>
           </div>
         )}
-        {rankingResult?.warning && !error && (
-          <div className="mb-4 bg-amber-900/30 border border-amber-600 rounded-xl px-4 py-3 text-amber-200 text-sm">
-            <p>{rankingResult.warning}</p>
-            <Link
-              href="/login"
-              className="inline-block mt-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600/50 hover:bg-amber-600/70 text-white transition-colors"
-            >
-              Ir para Login
-            </Link>
-            {rankingResult.stats && Object.keys(rankingResult.stats).length > 0 && (
-              <pre className="mt-2 text-xs overflow-auto">{JSON.stringify(rankingResult.stats, null, 2)}</pre>
-            )}
-          </div>
-        )}
+        {rankingResult?.warning && !error && (() => {
+          const w = rankingResult.warning;
+          const lower = w.toLowerCase();
+          const isAuthWarning =
+            lower.includes("token ausente") ||
+            lower.includes("jwt") ||
+            lower.includes("autoriz") ||
+            lower.includes("autent") ||
+            lower.includes("conecte à corretora");
+          let friendly = w;
+          if (w === "catalog_failed" || lower.startsWith("catalog_failed")) {
+            friendly =
+              "Houve um erro ao gerar o ranking (catalog_failed). Isso não é problema de login; " +
+              "tente novamente em alguns segundos ou reduza o Min ciclos para testar.";
+          }
+          return (
+            <div className="mb-4 bg-amber-900/30 border border-amber-600 rounded-xl px-4 py-3 text-amber-200 text-sm">
+              <p>{friendly}</p>
+              {isAuthWarning && (
+                <Link
+                  href="/login"
+                  className="inline-block mt-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600/50 hover:bg-amber-600/70 text-white transition-colors"
+                >
+                  Ir para Login
+                </Link>
+              )}
+              {rankingResult.stats && Object.keys(rankingResult.stats).length > 0 && (
+                <pre className="mt-2 text-xs overflow-auto">{JSON.stringify(rankingResult.stats, null, 2)}</pre>
+              )}
+            </div>
+          );
+        })()}
         {rankingResult?.debug?.max_setups_per_asset != null &&
           rankingResult.debug.max_setups_per_asset > 0 && (() => {
             const expected = windowMinutes === 120 ? 20 : windowMinutes === 240 ? 40 : 250;
