@@ -702,24 +702,6 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <nav className="flex items-center justify-around py-4 px-4 border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
-        <button type="button" className="flex flex-col items-center gap-1 text-[#8b9bb3] hover:text-[#e6edf3] transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-          <span className="text-xs">Planos</span>
-        </button>
-        <button type="button" className="flex flex-col items-center gap-1 text-[#3b82f6]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-          <span className="text-xs">Análise</span>
-        </button>
-        <Link href="/probabilisticas" className="flex flex-col items-center gap-1 text-[#8b9bb3] hover:text-[#e6edf3] transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-          <span className="text-xs">Probabilísticas</span>
-        </Link>
-        <Link href="/executor" className="flex flex-col items-center gap-1 text-[#8b9bb3] hover:text-[#e6edf3] transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-          <span className="text-xs">Corretora</span>
-        </Link>
-      </nav>
     </div>
   );
 }

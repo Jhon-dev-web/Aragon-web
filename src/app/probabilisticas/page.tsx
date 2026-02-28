@@ -954,7 +954,7 @@ function ProbabilisticasContent() {
         </div>
       </div>
 
-      <main className="flex-1 px-4 py-6 pb-24">
+      <main className="flex-1 px-3 py-4 pb-6 sm:px-4 sm:py-6">
         {removedStrategyToast && (
           <div className="mb-4 bg-amber-900/30 border border-amber-500 rounded-xl px-4 py-2 text-amber-200 text-sm">
             Estratégia removida: usando MHI.
@@ -1017,18 +1017,18 @@ function ProbabilisticasContent() {
           })()}
 
         {!rankingResult && !loading && (
-          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-8 text-center text-[#9CA3AF]">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-5 sm:p-8 text-center text-[#9CA3AF]">
             Ajuste os filtros no topo e clique em &quot;Atualizar ranking&quot;.
           </div>
         )}
         {loading && (
-          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-8 text-center text-[#9CA3AF] flex flex-col items-center gap-3">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-6 sm:p-8 text-center text-[#9CA3AF] flex flex-col items-center gap-3">
             <span className="inline-block w-8 h-8 border-2 border-[#2563EB]/30 border-t-[#2563EB] rounded-full animate-spin" />
             Atualizando ranking…
           </div>
         )}
         {rankingResult && !loading && hasNoResults && (
-          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-6 max-w-2xl">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4 sm:p-6 max-w-2xl">
             <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Sem resultados para esta janela</h3>
             <p className="text-sm text-[#9CA3AF] mb-4">
               Nenhum ativo passou no filtro (min ciclos). A estratégia ainda gerou estatísticas agregadas abaixo.
@@ -1108,7 +1108,7 @@ function ProbabilisticasContent() {
                 </span>
               </p>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {topList.map((row) => (
               <RankingCard
                 key={row.asset}
@@ -1158,27 +1158,6 @@ function ProbabilisticasContent() {
         mg1={cyclesModal?.mg1 ?? true}
         strategyId={cyclesModal?.strategyId ?? "mhi"}
       />
-
-      <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-3 px-4 bg-[#0B1220] border-t border-[#1F2937]">
-        <Link href="/" className="flex flex-col items-center gap-1 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <span className="text-xs">Análise</span>
-        </Link>
-        <span className="flex flex-col items-center gap-1 text-[#3B82F6]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-          </svg>
-          <span className="text-xs">Probabilísticas</span>
-        </span>
-        <Link href="/executor" className="flex flex-col items-center gap-1 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-          </svg>
-          <span className="text-xs">Corretora</span>
-        </Link>
-      </nav>
     </div>
   );
 }
