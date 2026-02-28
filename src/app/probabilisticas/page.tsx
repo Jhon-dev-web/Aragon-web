@@ -15,6 +15,7 @@ import {
   type CyclesResponse,
   type CycleItem,
 } from "../api";
+import { useAuth } from "../context/AuthContext";
 import { useBroker } from "../context/BrokerContext";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
@@ -32,7 +33,8 @@ const STRATEGIES = [
 ];
 const STRATEGY_STORAGE_KEY = "probabilisticas_strategy";
 
-const TOP_N_OPTIONS = [5, 10, 20];
+const TOP_N_OPTIONS = [1, 2, 3, 5, 10, 20];
+const PREFS_KEY = "aa_prob_prefs";
 
 const MG_OPTIONS = [
   { value: "off", label: "OFF" },
@@ -537,9 +539,34 @@ function DetailsDrawer({
   );
 }
 
+function loadPrefs(): Record<string, unknown> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function savePrefs(prefs: Record<string, unknown>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // ignore
+  }
+}
+
 function ProbabilisticasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { planLimits, user } = useAuth();
+  const maxStrategies = planLimits.maxStrategies;
+  const maxAssets = planLimits.maxAssets;
+  const allowedStrategies = STRATEGIES.slice(0, maxStrategies);
+  const allowedTopNOptions = TOP_N_OPTIONS.filter((n) => n <= maxAssets);
   const [strategy, setStrategy] = useState("mhi");
   const [windowMinutes, setWindowMinutes] = useState(120);
   const [mgMode, setMgMode] = useState("mg1");
@@ -565,6 +592,8 @@ function ProbabilisticasContent() {
   const [autoPausedByError, setAutoPausedByError] = useState(false);
   const broker = useBroker();
   const [showBrokerModal, setShowBrokerModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -573,6 +602,49 @@ function ProbabilisticasContent() {
       router.replace("/login");
     }
   }, [router]);
+
+  const prefsChecked = useRef(false);
+  useEffect(() => {
+    if (prefsChecked.current) return;
+    prefsChecked.current = true;
+    const prefs = loadPrefs();
+    if (prefs) {
+      if (typeof prefs.strategy === "string") setStrategy(prefs.strategy);
+      if (typeof prefs.windowMinutes === "number") setWindowMinutes(prefs.windowMinutes);
+      if (typeof prefs.mgMode === "string") setMgMode(prefs.mgMode);
+      if (typeof prefs.minSetups === "number") setMinSetups(prefs.minSetups);
+      if (typeof prefs.topN === "number") setTopN(prefs.topN);
+      if (typeof prefs.includeOtc === "boolean") setIncludeOtc(prefs.includeOtc);
+      if (typeof prefs.includeOpen === "boolean") setIncludeOpen(prefs.includeOpen);
+    } else {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (allowedStrategies.length && !allowedStrategies.some((s) => s.value === strategy)) {
+      setStrategy(allowedStrategies[0]?.value ?? "mhi");
+    }
+    if (maxAssets > 0 && topN > maxAssets) {
+      const capped = allowedTopNOptions.length ? Math.min(maxAssets, allowedTopNOptions[allowedTopNOptions.length - 1]!) : maxAssets;
+      setTopN(capped);
+    }
+  }, [maxAssets, strategy, topN, allowedStrategies, allowedTopNOptions]);
+
+  useEffect(() => {
+    if (prefsChecked.current && !showOnboarding) {
+      savePrefs({
+        strategy,
+        windowMinutes,
+        minSetups,
+        topN,
+        includeOtc,
+        includeOpen,
+        mgMode,
+      });
+    }
+  }, [showOnboarding, strategy, windowMinutes, minSetups, topN, includeOtc, includeOpen, mgMode]);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -620,7 +692,7 @@ function ProbabilisticasContent() {
         {
           minutes: windowMinutes,
           min_setups: minSetups,
-          top_n: topN,
+          top_n: Math.min(topN, maxAssets),
           include_otc: includeOtc,
           include_open: includeOpen,
           strategy_id: strategy,
@@ -642,7 +714,7 @@ function ProbabilisticasContent() {
       setLoading(false);
       inFlightRef.current = false;
     }
-  }, [strategy, windowMinutes, minSetups, topN, includeOtc, includeOpen, mgMode]);
+  }, [strategy, windowMinutes, minSetups, topN, includeOtc, includeOpen, mgMode, maxAssets]);
 
   const handleAtualizarRanking = useCallback(() => {
     setAutoPausedByError(false);
@@ -768,6 +840,84 @@ function ProbabilisticasContent() {
           </div>
         </div>
       )}
+
+      {showOnboarding && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold text-[#E5E7EB] mb-2">Configuração rápida</h2>
+            <p className="text-sm text-[#9CA3AF] mb-4">
+              Use os valores padrão e clique em &quot;Rodar ranking&quot; para ver o painel. Estratégia: MHI · Janela: 2h · MG1 · Min ciclos: 10 · Top: {Math.min(5, maxAssets)} · OTC ativado.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  savePrefs({
+                    strategy,
+                    windowMinutes,
+                    minSetups,
+                    topN,
+                    includeOtc,
+                    includeOpen,
+                    mgMode,
+                  });
+                  setShowOnboarding(false);
+                  handleAtualizarRanking();
+                }}
+                className="flex-1 px-4 py-3 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white"
+              >
+                Rodar ranking
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  savePrefs({
+                    strategy,
+                    windowMinutes,
+                    minSetups,
+                    topN,
+                    includeOtc,
+                    includeOpen,
+                    mgMode,
+                  });
+                  setShowOnboarding(false);
+                }}
+                className="px-4 py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB]"
+              >
+                Depois
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold text-[#E5E7EB] mb-2">Faça upgrade</h2>
+            <p className="text-sm text-[#9CA3AF] mb-4">
+              Seu plano atual limita estratégias e ativos. Assine Avançado ou PRO+ para liberar mais.
+            </p>
+            <div className="flex gap-3">
+              <a
+                href="/#planos"
+                className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-center bg-[#2563EB] hover:bg-[#3B82F6] text-white"
+                onClick={() => setShowUpgradeModal(false)}
+              >
+                Ver planos
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(false)}
+                className="px-4 py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB]"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#1F2937] shrink-0">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
@@ -811,7 +961,7 @@ function ProbabilisticasContent() {
             onChange={(e) => setStrategy(e.target.value)}
             className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
           >
-            {STRATEGIES.map((s) => (
+            {allowedStrategies.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
@@ -854,12 +1004,24 @@ function ProbabilisticasContent() {
             onChange={(e) => setTopN(Number(e.target.value))}
             className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
           >
-            {TOP_N_OPTIONS.map((n) => (
+            {allowedTopNOptions.map((n) => (
               <option key={n} value={n}>
                 Top {n}
               </option>
             ))}
           </select>
+          <span className="text-xs text-[#9CA3AF]">
+            Ativos: {topN}/{maxAssets}
+          </span>
+          {user?.plan !== "pro_plus" && (
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(true)}
+              className="text-xs text-[#2563EB] hover:underline"
+            >
+              Faça upgrade
+            </button>
+          )}
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"

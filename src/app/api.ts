@@ -9,10 +9,11 @@ export const API_BASE =
 // ----- Auth token (JWT) -----
 const TOKEN_STORAGE_KEY = "aa_auth_token";
 const USER_EMAIL_KEY = "aa_user_email";
+const USER_PLAN_KEY = "aa_user_plan";
 
 let inMemoryToken: string | null = null;
 
-export function setAuthToken(token: string | null, email?: string) {
+export function setAuthToken(token: string | null, email?: string, plan?: string) {
   inMemoryToken = token;
   if (typeof window !== "undefined") {
     if (token) {
@@ -20,10 +21,45 @@ export function setAuthToken(token: string | null, email?: string) {
       if (email) {
         window.localStorage.setItem(USER_EMAIL_KEY, email.toLowerCase());
       }
+      if (plan !== undefined) {
+        window.localStorage.setItem(USER_PLAN_KEY, plan);
+      }
     } else {
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
       window.localStorage.removeItem(USER_EMAIL_KEY);
+      window.localStorage.removeItem(USER_PLAN_KEY);
     }
+  }
+}
+
+export type MeResponse = { id: string; email: string; plan: string };
+
+export function getStoredPlan(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(USER_PLAN_KEY);
+}
+
+export function setStoredPlan(plan: string): void {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(USER_PLAN_KEY, plan);
+  }
+}
+
+export async function fetchMe(): Promise<MeResponse | null> {
+  const r = await fetch(`${API_BASE}/me`, { headers: authHeaders() });
+  const text = await r.text();
+  if (!r.ok) return null;
+  const ct = r.headers.get("content-type") || "";
+  if (ct.includes("text/html") || text.trimStart().startsWith("<")) return null;
+  try {
+    const data = JSON.parse(text);
+    return {
+      id: String(data.id ?? ""),
+      email: String(data.email ?? ""),
+      plan: String(data.plan ?? "free"),
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -125,6 +161,39 @@ export async function fetchHealth(): Promise<{ status: string; server_now: strin
     throw new Error(msg ?? text);
   }
   return JSON.parse(text);
+}
+
+/** Resumo público para a home (GET /public/summary). Retorna null se API indisponível ou HTML. */
+export type PublicSummary = {
+  assets_evaluated: number;
+  cycles_total: number;
+  top_asset: { symbol: string; label: string; win_rate_pct: number; cycles: number } | null;
+};
+
+export async function fetchPublicSummary(): Promise<PublicSummary | null> {
+  try {
+    const r = await fetch(`${API_BASE}/public/summary`, { cache: "no-store" });
+    const text = await r.text();
+    const ct = r.headers.get("content-type") || "";
+    if (!r.ok) return null;
+    if (ct.includes("text/html") || text.trimStart().startsWith("<")) return null;
+    const data = JSON.parse(text);
+    return {
+      assets_evaluated: Number(data.assets_evaluated) || 0,
+      cycles_total: Number(data.cycles_total) || 0,
+      top_asset:
+        data.top_asset && data.top_asset.symbol
+          ? {
+              symbol: String(data.top_asset.symbol),
+              label: String(data.top_asset.label || data.top_asset.symbol),
+              win_rate_pct: Number(data.top_asset.win_rate_pct) || 0,
+              cycles: Number(data.top_asset.cycles) || 0,
+            }
+          : null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 const FETCH_TIMEOUT_MS = 25_000;

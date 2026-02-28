@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authLogin, authRegister, getAuthToken } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { fetchUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -37,6 +39,7 @@ export default function LoginPage() {
       } else {
         await authRegister(em, pw);
       }
+      await fetchUser();
       router.replace("/probabilisticas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao autenticar. Verifique email e senha.");
