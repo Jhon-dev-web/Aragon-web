@@ -48,13 +48,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
       <header className="shrink-0 flex items-center justify-center px-4 py-6 border-b border-[#1F2937]">
-        <Link href="/probabilisticas" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center">
             <span className="text-white font-bold text-sm">AA</span>
           </div>
           <div>
             <h1 className="text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
-            <p className="text-xs text-[#9CA3AF]">Conectar à corretora</p>
+            <p className="text-xs text-[#9CA3AF]">Trading Intelligence Platform</p>
           </div>
         </Link>
       </header>
@@ -145,8 +145,8 @@ export default function LoginPage() {
               )}
             </p>
             <p className="mt-4 text-center text-sm text-[#9CA3AF]">
-              <Link href="/probabilisticas" className="text-[#3B82F6] hover:underline font-medium">
-                Voltar para Probabilísticas
+              <Link href="/" className="text-[#3B82F6] hover:underline font-medium">
+                Voltar para a Home
               </Link>
             </p>
           </div>

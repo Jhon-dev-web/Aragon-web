@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ARAGON ANALYTICS",
-  description: "Trading Intelligence Platform — Sinais e backtest MHI",
+  description: "Trading Intelligence Platform — Catalogação probabilística e ranking por assertividade",
 };
 
 export default function RootLayout({

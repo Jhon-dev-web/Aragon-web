@@ -109,10 +109,22 @@ export type CatalogMhiResponse = {
   };
 };
 
+/** Mensagem amigável quando o backend retorna HTML (ex.: 502/503 do proxy). */
+function friendlyMessageIfHtml(status: number, text: string): string | null {
+  if ((status === 502 || status === 503) && text.trimStart().startsWith("<")) {
+    return "Servidor iniciando. Tente novamente em alguns instantes.";
+  }
+  return null;
+}
+
 export async function fetchHealth(): Promise<{ status: string; server_now: string; asset_default: string }> {
   const r = await fetch(`${API_BASE}/health`);
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) {
+    const msg = friendlyMessageIfHtml(r.status, text);
+    throw new Error(msg ?? text);
+  }
+  return JSON.parse(text);
 }
 
 const FETCH_TIMEOUT_MS = 25_000;
@@ -330,6 +342,8 @@ export async function fetchCatalogRanking(
   clearTimeout(timeoutId);
   if (!r.ok) {
     const text = await r.text();
+    const friendly = friendlyMessageIfHtml(r.status, text);
+    if (friendly) throw new Error(friendly);
     if (r.status === 400) {
       try {
         const j = JSON.parse(text);
