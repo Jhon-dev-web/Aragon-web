@@ -75,7 +75,7 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
 
 export default function HomePage() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const [showToast, setShowToast] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
@@ -104,7 +104,7 @@ export default function HomePage() {
     return () => { cancelled = true; };
   }, []);
 
-  const isLoggedIn = !!getAuthToken();
+  const isLoggedIn = !!user || (!authLoading && !!getAuthToken());
 
   const handleAcessarAragon = () => {
     if (getAuthToken()) {

@@ -569,7 +569,7 @@ function savePrefs(prefs: Record<string, unknown>): void {
 function ProbabilisticasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { planLimits, user, logout } = useAuth();
+  const { planLimits, user, loading: authLoading, logout } = useAuth();
   const maxStrategies = planLimits.maxStrategies;
   const maxAssets = planLimits.maxAssets;
   const allowedStrategies = STRATEGIES.slice(0, maxStrategies);
@@ -603,12 +603,11 @@ function ProbabilisticasContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const token = getAuthToken();
-    if (!token) {
+    if (authLoading) return;
+    if (!user && !getAuthToken()) {
       router.replace("/login");
     }
-  }, [router]);
+  }, [authLoading, user, router]);
 
   const prefsChecked = useRef(false);
   useEffect(() => {
