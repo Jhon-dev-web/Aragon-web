@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
+import { useAuth } from "./context/AuthContext";
 
 function ToastRecursoEmBreve({ onDismiss }: { onDismiss: () => void }) {
   useEffect(() => {
@@ -74,6 +75,7 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
 
 export default function HomePage() {
   const router = useRouter();
+  const { logout } = useAuth();
   const [showToast, setShowToast] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
@@ -102,10 +104,7 @@ export default function HomePage() {
     return () => { cancelled = true; };
   }, []);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  useEffect(() => {
-    setIsLoggedIn(!!getAuthToken());
-  }, []);
+  const isLoggedIn = !!getAuthToken();
 
   const handleAcessarAragon = () => {
     if (getAuthToken()) {
@@ -113,6 +112,11 @@ export default function HomePage() {
     } else {
       router.push("/login");
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login?logout=1");
   };
 
   const planQuery = (plan: "free" | "advanced" | "pro_plus") => `/login?plan=${plan}`;
@@ -184,12 +188,32 @@ export default function HomePage() {
             <p className="text-xs text-[#9CA3AF] hidden sm:block">Trading Intelligence Platform</p>
           </div>
         </Link>
-        <Link
-          href="/login"
-          className="px-4 py-2 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:border-[#4B5563] transition-colors"
-        >
-          Entrar
-        </Link>
+        <div className="flex items-center gap-2">
+          {isLoggedIn ? (
+            <>
+              <Link
+                href="/probabilisticas"
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-colors"
+              >
+                Ir ao painel
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:border-[#4B5563] transition-colors"
+              >
+                Sair
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:border-[#4B5563] transition-colors"
+            >
+              Entrar
+            </Link>
+          )}
+        </div>
       </header>
 
       <main className="flex-1">

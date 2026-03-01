@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
 import {
   fetchCatalogRanking,
   fetchCycles,
@@ -17,6 +16,14 @@ import {
 } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useBroker } from "../context/BrokerContext";
+import { useSearchParams, useRouter } from "next/navigation";
+
+function maskEmail(email: string): string {
+  if (!email || !email.includes("@")) return email || "—";
+  const [local, domain] = email.split("@");
+  if (local.length <= 2) return "***@" + (domain?.slice(0, 2) ?? "") + "***";
+  return local.slice(0, 2) + "***@" + (domain?.slice(0, 2) ?? "") + "***";
+}
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -562,7 +569,7 @@ function savePrefs(prefs: Record<string, unknown>): void {
 function ProbabilisticasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { planLimits, user } = useAuth();
+  const { planLimits, user, logout } = useAuth();
   const maxStrategies = planLimits.maxStrategies;
   const maxAssets = planLimits.maxAssets;
   const allowedStrategies = STRATEGIES.slice(0, maxStrategies);
@@ -929,17 +936,30 @@ function ProbabilisticasContent() {
           </div>
         </Link>
         <div className="flex items-center gap-3 ml-auto">
+          <span className="text-xs text-[#9CA3AF] hidden sm:inline">
+            Logado como: {maskEmail(user?.email ?? getCurrentUserEmail() ?? "")}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              router.push("/login");
+            }}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#E5E7EB] hover:bg-[#1F2937] transition-colors"
+          >
+            Sair
+          </button>
           <button
             type="button"
             onClick={() => setShowBrokerModal(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111827] border border-[#1F2937] hover:border-[#2563EB] transition-colors"
           >
             <div className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold">
-              {(getCurrentUserEmail() || "U")[0]?.toUpperCase()}
+              {(user?.email ?? getCurrentUserEmail() ?? "U")[0]?.toUpperCase()}
             </div>
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start hidden sm:block">
               <span className="text-xs text-[#E5E7EB] truncate max-w-[120px]">
-                {getCurrentUserEmail() || "Usuário"}
+                {user?.email ?? getCurrentUserEmail() ?? "Usuário"}
               </span>
               <span className="text-[10px] text-[#9CA3AF]">
                 {broker.loading

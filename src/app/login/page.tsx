@@ -2,18 +2,28 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authLogin, authRegister, getAuthToken } from "../api";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { fetchUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [logoutToast, setLogoutToast] = useState(false);
+
+  useEffect(() => {
+    if (searchParams?.get("logout") === "1") {
+      setLogoutToast(true);
+      const t = setTimeout(() => setLogoutToast(false), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -50,6 +60,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
+      {logoutToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl bg-[#1F2937] border border-[#374151] text-[#E5E7EB] text-sm shadow-xl flex items-center gap-3">
+          <span>Você saiu da conta.</span>
+          <button type="button" onClick={() => setLogoutToast(false)} className="p-1 rounded-lg hover:bg-white/10 text-[#9CA3AF]" aria-label="Fechar">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
       <header className="shrink-0 flex items-center justify-center px-4 py-6 border-b border-[#1F2937]">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center">

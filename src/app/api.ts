@@ -6,28 +6,30 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "/api";
 
-// ----- Auth token (JWT) -----
-const TOKEN_STORAGE_KEY = "aa_auth_token";
-const USER_EMAIL_KEY = "aa_user_email";
-const USER_PLAN_KEY = "aa_user_plan";
+// ----- Auth token (JWT) — usa AuthStore (aragon_token) -----
+import {
+  getToken as authStoreGetToken,
+  setToken as authStoreSetToken,
+  clearUserProfile,
+  clearPlan,
+  setStoredUserEmail,
+  setStoredPlan as authStoreSetStoredPlan,
+  getStoredPlan as authStoreGetStoredPlan,
+  getStoredUserEmail,
+} from "./util/AuthStore";
 
 let inMemoryToken: string | null = null;
 
 export function setAuthToken(token: string | null, email?: string, plan?: string) {
   inMemoryToken = token;
   if (typeof window !== "undefined") {
+    authStoreSetToken(token);
     if (token) {
-      window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-      if (email) {
-        window.localStorage.setItem(USER_EMAIL_KEY, email.toLowerCase());
-      }
-      if (plan !== undefined) {
-        window.localStorage.setItem(USER_PLAN_KEY, plan);
-      }
+      if (email) setStoredUserEmail(email);
+      if (plan !== undefined) authStoreSetStoredPlan(plan);
     } else {
-      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-      window.localStorage.removeItem(USER_EMAIL_KEY);
-      window.localStorage.removeItem(USER_PLAN_KEY);
+      clearUserProfile();
+      clearPlan();
     }
   }
 }
@@ -35,14 +37,11 @@ export function setAuthToken(token: string | null, email?: string, plan?: string
 export type MeResponse = { id: string; email: string; plan: string };
 
 export function getStoredPlan(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(USER_PLAN_KEY);
+  return authStoreGetStoredPlan();
 }
 
 export function setStoredPlan(plan: string): void {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(USER_PLAN_KEY, plan);
-  }
+  authStoreSetStoredPlan(plan);
 }
 
 export async function fetchMe(): Promise<MeResponse | null> {
@@ -66,14 +65,13 @@ export async function fetchMe(): Promise<MeResponse | null> {
 export function getAuthToken(): string | null {
   if (typeof window === "undefined") return inMemoryToken;
   if (inMemoryToken) return inMemoryToken;
-  const stored = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  const stored = authStoreGetToken();
   inMemoryToken = stored;
   return stored;
 }
 
 export function getCurrentUserEmail(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(USER_EMAIL_KEY);
+  return getStoredUserEmail();
 }
 
 function authHeaders(extra?: HeadersInit): HeadersInit {
