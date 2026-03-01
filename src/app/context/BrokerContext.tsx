@@ -33,6 +33,19 @@ const defaultStore: BrokerStore = {
 
 const BrokerContext = createContext<BrokerStore>(defaultStore);
 
+function isAuthErrorMessage(msg: string): boolean {
+  const lower = (msg || "").toLowerCase();
+  return (
+    lower.includes("token ausente") ||
+    lower.includes("token inválido") ||
+    lower.includes("token invalido") ||
+    lower.includes("jwt") ||
+    lower.includes("unauthorized") ||
+    lower.includes("401") ||
+    lower.includes("403")
+  );
+}
+
 export function BrokerProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [connected, setConnected] = useState(false);
@@ -60,10 +73,12 @@ export function BrokerProvider({ children }: { children: React.ReactNode }) {
       setBalance(s.balance ?? null);
       setLastCheckedAt(new Date().toISOString());
     } catch (e) {
+      const msg = e instanceof Error ? e.message : "Falha ao verificar status";
       setConnected(false);
       setAccountType(null);
       setBalance(null);
-      setError(e instanceof Error ? e.message : "Falha ao verificar status");
+      // Evita falso erro visual de token no modal quando a sessão acabou de trocar.
+      setError(isAuthErrorMessage(msg) ? null : msg);
     } finally {
       setLoading(false);
     }
@@ -94,7 +109,8 @@ export function BrokerProvider({ children }: { children: React.ReactNode }) {
         setLastCheckedAt(new Date().toISOString());
         return { success: true };
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Conexão falhou";
+        const raw = e instanceof Error ? e.message : "Conexão falhou";
+        const msg = isAuthErrorMessage(raw) ? "Sessão expirada. Faça login novamente." : raw;
         setError(msg);
         return { success: false, error: msg };
       }

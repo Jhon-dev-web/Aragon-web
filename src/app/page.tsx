@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
 import { useAuth } from "./context/AuthContext";
 
+const BULLEX_REGISTER_URL = "https://trade.bull-ex.com/register?aff=814493&aff_model=revenue&afftrack=";
+
 function ToastRecursoEmBreve({ onDismiss }: { onDismiss: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 5000);
@@ -185,7 +187,6 @@ export default function HomePage() {
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
-            <p className="text-xs text-[#9CA3AF] hidden sm:block">Trading Intelligence Platform</p>
           </div>
         </Link>
         <div className="flex items-center gap-2">
@@ -220,7 +221,7 @@ export default function HomePage() {
         {/* Hero centralizado */}
         <section className="px-4 sm:px-6 py-16 sm:py-20 text-center max-w-3xl mx-auto">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#E5E7EB] tracking-tight mb-4">
-            Trading Intelligence Platform
+            ARAGON ANALYTICS
           </h2>
           <p className="text-[#9CA3AF] text-base sm:text-lg mb-8">
             Catalogação probabilística de estratégias com ranking por assertividade e ciclos.
@@ -239,6 +240,22 @@ export default function HomePage() {
             >
               Ver Planos
             </a>
+          </div>
+          <div className="mt-6 mx-auto max-w-2xl rounded-xl border border-[#374151] bg-[#111827]/80 px-4 py-3 text-left">
+            <p className="text-sm text-[#D1D5DB]">
+              Regra recomendada: use no ARAGON o mesmo email da sua conta na corretora Bullex.
+            </p>
+            <p className="text-xs text-[#9CA3AF] mt-1">
+              Ainda não tem conta na Bullex?{" "}
+              <a
+                href={BULLEX_REGISTER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#3B82F6] hover:underline font-medium"
+              >
+                Criar conta na Bullex
+              </a>
+            </p>
           </div>
         </section>
 
@@ -370,7 +387,7 @@ export default function HomePage() {
 
         {/* Footer */}
         <footer className="px-4 sm:px-6 py-8 border-t border-[#1F2937]/80 text-center text-sm text-[#9CA3AF]">
-          <p>ARAGON ANALYTICS — Trading Intelligence Platform</p>
+          <p>ARAGON ANALYTICS</p>
           <p className="mt-1">
             <a href="#" className="hover:text-[#E5E7EB] transition-colors">Termos</a>
             {" · "}

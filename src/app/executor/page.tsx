@@ -480,7 +480,6 @@ export default function ExecutorDashboard() {
             <h1 className="text-xl font-semibold text-[#E5E7EB]">
               ARAGON ANALYTICS
             </h1>
-            <p className="text-xs text-[#9CA3AF]">Trading Intelligence Platform</p>
           </div>
         </Link>
       </header>

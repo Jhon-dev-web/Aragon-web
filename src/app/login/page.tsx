@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { authLogin, authRegister, getAuthToken } from "../api";
 import { useAuth } from "../context/AuthContext";
 
+const BULLEX_REGISTER_URL = "https://trade.bull-ex.com/register?aff=814493&aff_model=revenue&afftrack=";
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,7 +77,6 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
-            <p className="text-xs text-[#9CA3AF]">Trading Intelligence Platform</p>
           </div>
         </Link>
       </header>
@@ -91,6 +92,22 @@ export default function LoginPage() {
                 ? "Use seu email e senha para acessar o painel de análises."
                 : "Crie sua conta ARAGON para acessar o painel de análises."}
             </p>
+            <div className="mb-5 rounded-xl border border-[#374151] bg-[#0B1220] px-3 py-3">
+              <p className="text-xs text-[#D1D5DB]">
+                Regra recomendada: use no ARAGON o mesmo email da sua conta na corretora Bullex.
+              </p>
+              <p className="text-xs text-[#9CA3AF] mt-1">
+                Ainda não tem conta na Bullex?{" "}
+                <a
+                  href={BULLEX_REGISTER_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#3B82F6] hover:underline font-medium"
+                >
+                  Criar conta na Bullex
+                </a>
+              </p>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <label className="block">
                 <span className="block text-xs text-[#9CA3AF] mb-1">Email</span>
