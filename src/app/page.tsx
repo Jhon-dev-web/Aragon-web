@@ -25,7 +25,7 @@ function ToastRecursoEmBreve({ onDismiss }: { onDismiss: () => void }) {
 
 function SkeletonMetric() {
   return (
-    <div className="rounded-xl h-20 bg-[#1F2937]/80 animate-pulse border border-[#374151]/50" />
+    <div className="rounded-xl h-24 bg-[#0F172A] animate-pulse border border-[#1E293B]" />
   );
 }
 
@@ -43,23 +43,23 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
   const s = summary ?? null;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="rounded-xl px-5 py-4 bg-[#111827]/90 border border-[#1F2937] text-center backdrop-blur-sm">
+      <div className="rounded-xl px-5 py-5 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
         <p className="text-2xl sm:text-3xl font-bold text-[#E5E7EB] tabular-nums">
           {s?.assets_evaluated ?? "—"}
         </p>
-        <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1">Ativos avaliados</p>
+        <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">Ativos avaliados</p>
       </div>
-      <div className="rounded-xl px-5 py-4 bg-[#111827]/90 border border-[#1F2937] text-center backdrop-blur-sm">
+      <div className="rounded-xl px-5 py-5 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
         <p className="text-2xl sm:text-3xl font-bold text-[#E5E7EB] tabular-nums">
           {s?.cycles_total != null && s.cycles_total > 0 ? s.cycles_total.toLocaleString("pt-BR") : "—"}
         </p>
-        <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1">Ciclos totais</p>
+        <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">Ciclos totais</p>
       </div>
-      <div className="rounded-xl px-5 py-4 bg-[#111827]/90 border border-[#1F2937] text-center backdrop-blur-sm">
+      <div className="rounded-xl px-5 py-5 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
         {s?.top_asset ? (
           <>
             <p className="text-lg sm:text-xl font-semibold text-[#22C55E]">{s.top_asset.label}</p>
-            <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1">
+            <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
               {s.top_asset.win_rate_pct}% · {s.top_asset.cycles} ciclos
             </p>
             <p className="text-xs text-[#6B7280] mt-0.5">Top ativo agora</p>
@@ -77,7 +77,7 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [showToast, setShowToast] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
@@ -116,11 +116,6 @@ export default function HomePage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login?logout=1");
-  };
-
   const planQuery = (plan: "free" | "advanced" | "pro_plus") => `/login?plan=${plan}`;
 
   const handlePlanCta = (plan: "free" | "advanced" | "pro_plus") => {
@@ -133,11 +128,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen text-[#E5E7EB] flex flex-col relative overflow-hidden">
-      {/* Background: gradiente + overlay sutil + candles faint */}
       <div
         className="fixed inset-0 -z-10"
         style={{
-          background: "linear-gradient(165deg, #030712 0%, #0B1220 35%, #111827 70%, #0B1220 100%)",
+          background: "linear-gradient(165deg, #060B17 0%, #0B1224 100%)",
         }}
       />
       <div
@@ -180,7 +174,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#1F2937]/80 shrink-0 bg-[#0B1220]/50 backdrop-blur-sm">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#1E293B]/80 shrink-0 bg-[#0B1224]/70 backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#2563EB]/20">
             <span className="text-white font-bold text-sm">AA</span>
@@ -191,21 +185,12 @@ export default function HomePage() {
         </Link>
         <div className="flex items-center gap-2">
           {isLoggedIn ? (
-            <>
-              <Link
-                href="/probabilisticas"
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-colors"
-              >
-                Ir ao painel
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:border-[#4B5563] transition-colors"
-              >
-                Sair
-              </button>
-            </>
+            <Link
+              href="/probabilisticas"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-colors"
+            >
+              Ir ao painel
+            </Link>
           ) : (
             <Link
               href="/login"
@@ -219,33 +204,33 @@ export default function HomePage() {
 
       <main className="flex-1">
         {/* Hero centralizado */}
-        <section className="px-4 sm:px-6 py-16 sm:py-20 text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#E5E7EB] tracking-tight mb-4">
-            ARAGON ANALYTICS
+        <section className="px-4 sm:px-6 py-20 sm:py-24 text-center max-w-4xl mx-auto">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#E5E7EB] tracking-tight mb-5">
+            Descubra quais ativos realmente funcionam
           </h2>
-          <p className="text-[#9CA3AF] text-base sm:text-lg mb-8">
-            Catalogação probabilística de estratégias com ranking por assertividade e ciclos.
+          <p className="text-[#94A3B8] text-lg sm:text-xl mb-10">
+            Ranking probabilístico baseado em ciclos reais de mercado.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               type="button"
               onClick={handleAcessarAragon}
-              className="px-6 py-3.5 rounded-xl text-sm font-semibold bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-all shadow-lg shadow-[#2563EB]/25 hover:shadow-[#2563EB]/40"
+              className="min-w-[240px] px-8 py-4 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_0_28px_rgba(79,70,229,0.35)] hover:brightness-110 hover:shadow-[0_0_36px_rgba(37,99,235,0.45)]"
             >
               Acessar Aragon
             </button>
             <a
               href="#planos"
-              className="px-6 py-3.5 rounded-xl text-sm font-semibold bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:border-[#4B5563] transition-colors text-center"
+              className="min-w-[200px] px-8 py-4 rounded-xl text-sm font-semibold border border-[#3B82F6]/60 text-[#E5E7EB] hover:bg-[#1E293B]/60 transition-colors text-center"
             >
               Ver Planos
             </a>
           </div>
-          <div className="mt-6 mx-auto max-w-2xl rounded-xl border border-[#374151] bg-[#111827]/80 px-4 py-3 text-left">
+          <div className="mt-8 mx-auto max-w-2xl rounded-xl border border-[#334155] bg-[#0F172A] px-4 py-3 text-left">
             <p className="text-sm text-[#D1D5DB]">
               Regra recomendada: use no ARAGON o mesmo email da sua conta na corretora Bullex.
             </p>
-            <p className="text-xs text-[#9CA3AF] mt-1">
+            <p className="text-xs text-[#94A3B8] mt-1">
               Ainda não tem conta na Bullex?{" "}
               <a
                 href={BULLEX_REGISTER_URL}
@@ -260,46 +245,58 @@ export default function HomePage() {
         </section>
 
         {/* Prova / Trust */}
-        <section className="px-4 sm:px-6 py-8 sm:py-10 border-t border-[#1F2937]/80">
-          <div className="max-w-4xl mx-auto">
+        <section className="px-4 sm:px-6 py-10 sm:py-12 border-t border-[#1E293B]/80">
+          <div className="max-w-4xl mx-auto rounded-2xl border border-[#2563EB]/35 shadow-[0_0_30px_rgba(37,99,235,0.16)] p-4 sm:p-6 bg-[#0B1224]/30">
             <TrustCards summary={summary} />
           </div>
         </section>
 
         {/* Como funciona */}
-        <section className="px-4 sm:px-6 py-12 sm:py-16 border-t border-[#1F2937]/80">
-          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-10">Como funciona</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="rounded-2xl p-6 bg-[#111827]/80 border border-[#1F2937] text-center backdrop-blur-sm">
-              <div className="w-12 h-12 rounded-xl bg-[#2563EB]/20 flex items-center justify-center mx-auto mb-4">
-                <span className="text-[#2563EB] font-bold text-lg">1</span>
+        <section className="px-4 sm:px-6 py-14 sm:py-20 border-t border-[#1E293B]/80">
+          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-12">Como funciona</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 max-w-5xl mx-auto">
+            <div className="rounded-2xl p-8 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+              <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-6">
+                <span className="text-[#60A5FA] font-bold text-2xl">1</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Escolha estratégia e timeframe</h4>
-              <p className="text-sm text-[#9CA3AF]">Selecione MHI, 3 Mosqueteiros ou outra estratégia e a janela (2h, 4h, 24h).</p>
+              <p className="text-sm text-[#94A3B8]">Selecione MHI, 3 Mosqueteiros ou outra estratégia e a janela (2h, 4h, 24h).</p>
             </div>
-            <div className="rounded-2xl p-6 bg-[#111827]/80 border border-[#1F2937] text-center backdrop-blur-sm">
-              <div className="w-12 h-12 rounded-xl bg-[#2563EB]/20 flex items-center justify-center mx-auto mb-4">
-                <span className="text-[#2563EB] font-bold text-lg">2</span>
+            <div className="rounded-2xl p-8 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+              <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-6">
+                <span className="text-[#60A5FA] font-bold text-2xl">2</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Catalogamos histórico e ciclos</h4>
-              <p className="text-sm text-[#9CA3AF]">O motor processa candles e classifica cada ciclo (P, G1, H) por ativo.</p>
+              <p className="text-sm text-[#94A3B8]">O motor processa candles e classifica cada ciclo (P, G1, H) por ativo.</p>
             </div>
-            <div className="rounded-2xl p-6 bg-[#111827]/80 border border-[#1F2937] text-center backdrop-blur-sm">
-              <div className="w-12 h-12 rounded-xl bg-[#2563EB]/20 flex items-center justify-center mx-auto mb-4">
-                <span className="text-[#2563EB] font-bold text-lg">3</span>
+            <div className="rounded-2xl p-8 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+              <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-6">
+                <span className="text-[#60A5FA] font-bold text-2xl">3</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Ranking e consistência por ativo</h4>
-              <p className="text-sm text-[#9CA3AF]">Você vê os ativos mais assertivos e pode filtrar por min ciclos e Top N.</p>
+              <p className="text-sm text-[#94A3B8]">Você vê os ativos mais assertivos e pode filtrar por min ciclos e Top N.</p>
             </div>
           </div>
         </section>
 
+        {/* Por que usar */}
+        <section className="px-4 sm:px-6 py-12 sm:py-14 border-t border-[#1E293B]/80">
+          <div className="max-w-4xl mx-auto rounded-2xl bg-[#0F172A] border border-[#1E293B] p-6 sm:p-8">
+            <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] mb-5">Por que usar o Aragon?</h3>
+            <ul className="space-y-3 text-[#94A3B8] text-sm sm:text-base">
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Ranking baseado em dados reais</li>
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Identificação de ativos com maior probabilidade</li>
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Interface simples e objetiva</li>
+            </ul>
+          </div>
+        </section>
+
         {/* Planos */}
-        <section id="planos" className="px-4 sm:px-6 py-12 sm:py-16 border-t border-[#1F2937]/80 scroll-mt-6">
+        <section id="planos" className="px-4 sm:px-6 py-12 sm:py-16 border-t border-[#1E293B]/80 scroll-mt-6">
           <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-10">Planos</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* GRÁTIS */}
-            <div className="rounded-2xl p-6 bg-[#111827]/90 border border-[#1F2937] flex flex-col backdrop-blur-sm">
+            <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
               <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">GRÁTIS</h4>
               <p className="text-[#9CA3AF] text-sm mb-4">Para começar</p>
               <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
@@ -341,14 +338,14 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handlePlanCta("advanced")}
-                  className="w-full py-3 rounded-xl text-sm font-semibold bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-all shadow-lg shadow-[#2563EB]/25"
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
                   Assinar Avançado
                 </button>
               ) : (
                 <Link
                   href={planQuery("advanced")}
-                  className="block w-full py-3 rounded-xl text-sm font-semibold text-center bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-all shadow-lg shadow-[#2563EB]/25"
+                  className="block w-full py-3 rounded-xl text-sm font-semibold text-center text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
                   Assinar Avançado
                 </Link>
@@ -356,7 +353,7 @@ export default function HomePage() {
             </div>
 
             {/* PRO+ */}
-            <div className="rounded-2xl p-6 bg-[#111827]/90 border border-[#1F2937] flex flex-col backdrop-blur-sm">
+            <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
               <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">PRO+</h4>
               <p className="text-[#9CA3AF] text-sm mb-4">Máximo desempenho</p>
               <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
@@ -386,7 +383,7 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="px-4 sm:px-6 py-8 border-t border-[#1F2937]/80 text-center text-sm text-[#9CA3AF]">
+        <footer className="px-4 sm:px-6 py-8 border-t border-[#1E293B]/80 text-center text-sm text-[#94A3B8]">
           <p>ARAGON ANALYTICS</p>
           <p className="mt-1">
             <a href="#" className="hover:text-[#E5E7EB] transition-colors">Termos</a>
