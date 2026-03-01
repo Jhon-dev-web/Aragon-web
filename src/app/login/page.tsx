@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { authLogin, authRegister, getAuthToken } from "../api";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,7 +10,6 @@ const BULLEX_REGISTER_URL = "https://trade.bull-ex.com/register?aff=814493&aff_m
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { fetchUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,12 +19,14 @@ export default function LoginPage() {
   const [logoutToast, setLogoutToast] = useState(false);
 
   useEffect(() => {
-    if (searchParams?.get("logout") === "1") {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("logout") === "1") {
       setLogoutToast(true);
       const t = setTimeout(() => setLogoutToast(false), 5000);
       return () => clearTimeout(t);
     }
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
