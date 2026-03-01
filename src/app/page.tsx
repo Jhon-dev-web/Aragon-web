@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import { getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
 import { useAuth } from "./context/AuthContext";
 
-const BULLEX_REGISTER_URL = "https://trade.bull-ex.com/register?aff=814493&aff_model=revenue&afftrack=";
-
 function ToastRecursoEmBreve({ onDismiss }: { onDismiss: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 5000);
@@ -33,7 +31,7 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
   const loading = summary === undefined;
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <SkeletonMetric />
         <SkeletonMetric />
         <SkeletonMetric />
@@ -42,32 +40,32 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
   }
   const s = summary ?? null;
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="rounded-xl px-5 py-5 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="rounded-2xl px-6 py-7 bg-[#0F172A] border border-[#2563EB]/35 text-center backdrop-blur-sm shadow-[0_0_26px_rgba(37,99,235,0.12)] min-h-[150px] flex flex-col justify-center">
         <p className="text-2xl sm:text-3xl font-bold text-[#E5E7EB] tabular-nums">
           {s?.assets_evaluated ?? "—"}
         </p>
-        <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">Ativos avaliados</p>
+        <p className="text-sm text-[#94A3B8] mt-2">Ativos avaliados</p>
       </div>
-      <div className="rounded-xl px-5 py-5 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+      <div className="rounded-2xl px-6 py-7 bg-[#0F172A] border border-[#2563EB]/35 text-center backdrop-blur-sm shadow-[0_0_26px_rgba(37,99,235,0.12)] min-h-[150px] flex flex-col justify-center">
         <p className="text-2xl sm:text-3xl font-bold text-[#E5E7EB] tabular-nums">
           {s?.cycles_total != null && s.cycles_total > 0 ? s.cycles_total.toLocaleString("pt-BR") : "—"}
         </p>
-        <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">Ciclos totais</p>
+        <p className="text-sm text-[#94A3B8] mt-2">Ciclos catalogados</p>
       </div>
-      <div className="rounded-xl px-5 py-5 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+      <div className="rounded-2xl px-6 py-7 bg-[#0F172A] border border-[#2563EB]/35 text-center backdrop-blur-sm shadow-[0_0_26px_rgba(37,99,235,0.12)] min-h-[150px] flex flex-col justify-center">
         {s?.top_asset ? (
           <>
             <p className="text-lg sm:text-xl font-semibold text-[#22C55E]">{s.top_asset.label}</p>
-            <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
+            <p className="text-sm text-[#94A3B8] mt-2">
               {s.top_asset.win_rate_pct}% · {s.top_asset.cycles} ciclos
             </p>
-            <p className="text-xs text-[#6B7280] mt-0.5">Top ativo agora</p>
+            <p className="text-xs text-[#6B7280] mt-1">Top ativo</p>
           </>
         ) : (
           <>
             <p className="text-xl font-semibold text-[#6B7280]">—</p>
-            <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1">Top ativo agora</p>
+            <p className="text-sm text-[#9CA3AF] mt-1">Top ativo</p>
           </>
         )}
       </div>
@@ -203,75 +201,106 @@ export default function HomePage() {
       </header>
 
       <main className="flex-1">
-        {/* Hero centralizado */}
-        <section className="px-4 sm:px-6 py-20 sm:py-24 text-center max-w-4xl mx-auto">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#E5E7EB] tracking-tight mb-5">
-            Descubra quais ativos realmente funcionam
-          </h2>
-          <p className="text-[#94A3B8] text-lg sm:text-xl mb-10">
-            Ranking probabilístico baseado em ciclos reais de mercado.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              type="button"
-              onClick={handleAcessarAragon}
-              className="min-w-[240px] px-8 py-4 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_0_28px_rgba(79,70,229,0.35)] hover:brightness-110 hover:shadow-[0_0_36px_rgba(37,99,235,0.45)]"
-            >
-              Acessar Aragon
-            </button>
-            <a
-              href="#planos"
-              className="min-w-[200px] px-8 py-4 rounded-xl text-sm font-semibold border border-[#3B82F6]/60 text-[#E5E7EB] hover:bg-[#1E293B]/60 transition-colors text-center"
-            >
-              Ver Planos
-            </a>
-          </div>
-          <div className="mt-8 mx-auto max-w-2xl rounded-xl border border-[#334155] bg-[#0F172A] px-4 py-3 text-left">
-            <p className="text-sm text-[#D1D5DB]">
-              Regra recomendada: use no ARAGON o mesmo email da sua conta na corretora Bullex.
-            </p>
-            <p className="text-xs text-[#94A3B8] mt-1">
-              Ainda não tem conta na Bullex?{" "}
-              <a
-                href={BULLEX_REGISTER_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#3B82F6] hover:underline font-medium"
-              >
-                Criar conta na Bullex
-              </a>
-            </p>
+        {/* Hero premium com preview do sistema */}
+        <section className="px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#E5E7EB] tracking-tight leading-tight">
+                Descubra quais ativos realmente funcionam
+              </h2>
+              <p className="text-[#94A3B8] text-lg sm:text-xl mt-5">
+                Ranking probabilístico baseado em ciclos reais de mercado, para você decidir com dados e não com achismo.
+              </p>
+              <ul className="mt-7 space-y-3 text-[#CBD5E1] text-sm sm:text-base">
+                <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Leitura objetiva dos ativos com melhor desempenho</li>
+                <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Mais consistência na escolha das operações</li>
+                <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Interface direta para agir rápido no mercado</li>
+              </ul>
+              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                <button
+                  type="button"
+                  onClick={handleAcessarAragon}
+                  className="min-w-[250px] px-8 py-4 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_0_32px_rgba(79,70,229,0.35)] hover:brightness-110 hover:shadow-[0_0_42px_rgba(37,99,235,0.5)]"
+                >
+                  Acessar Aragon
+                </button>
+                <a
+                  href="#planos"
+                  className="min-w-[210px] px-8 py-4 rounded-xl text-sm font-semibold border border-[#3B82F6]/60 text-[#E5E7EB] hover:bg-[#1E293B]/60 transition-colors text-center"
+                >
+                  Ver planos
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#2563EB]/35 bg-[#0F172A]/85 p-4 sm:p-5 shadow-[0_0_38px_rgba(37,99,235,0.2)] backdrop-blur-sm">
+              <div className="rounded-xl border border-[#1E293B] bg-[#0B1224] p-4 sm:p-5 min-h-[280px] sm:min-h-[340px] flex flex-col">
+                <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-4">
+                  <span>Preview da plataforma</span>
+                  <span className="px-2 py-1 rounded-full bg-[#2563EB]/20 text-[#93C5FD]">Live Ranking</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="rounded-lg bg-[#0F172A] border border-[#1E293B] p-3">
+                    <p className="text-xs text-[#94A3B8]">Top ativo</p>
+                    <p className="text-sm font-semibold text-[#22C55E] mt-1">{summary?.top_asset?.label ?? "EURUSD-OTC"}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#0F172A] border border-[#1E293B] p-3">
+                    <p className="text-xs text-[#94A3B8]">Win rate</p>
+                    <p className="text-sm font-semibold text-[#E5E7EB] mt-1">
+                      {summary?.top_asset?.win_rate_pct != null ? `${summary.top_asset.win_rate_pct}%` : "71.8%"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-1 rounded-lg bg-[#0F172A] border border-[#1E293B] p-4">
+                  <div className="space-y-2">
+                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
+                      <div className="h-full w-[78%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                    </div>
+                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
+                      <div className="h-full w-[65%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                    </div>
+                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
+                      <div className="h-full w-[59%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                    </div>
+                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
+                      <div className="h-full w-[52%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-[#94A3B8] mt-4">Espaço reservado para screenshot real do sistema</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Prova / Trust */}
-        <section className="px-4 sm:px-6 py-10 sm:py-12 border-t border-[#1E293B]/80">
-          <div className="max-w-4xl mx-auto rounded-2xl border border-[#2563EB]/35 shadow-[0_0_30px_rgba(37,99,235,0.16)] p-4 sm:p-6 bg-[#0B1224]/30">
+        <section className="px-4 sm:px-6 py-12 sm:py-16 border-t border-[#1E293B]/80">
+          <div className="max-w-6xl mx-auto rounded-2xl border border-[#2563EB]/35 shadow-[0_0_34px_rgba(37,99,235,0.18)] p-5 sm:p-7 bg-[#0B1224]/30">
             <TrustCards summary={summary} />
           </div>
         </section>
 
         {/* Como funciona */}
-        <section className="px-4 sm:px-6 py-14 sm:py-20 border-t border-[#1E293B]/80">
-          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-12">Como funciona</h3>
+        <section className="px-4 sm:px-6 py-16 sm:py-24 border-t border-[#1E293B]/80">
+          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-14">Como funciona</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 max-w-5xl mx-auto">
-            <div className="rounded-2xl p-8 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
-              <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-6">
-                <span className="text-[#60A5FA] font-bold text-2xl">1</span>
+            <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+              <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">
+                <span className="text-[#60A5FA] font-bold text-3xl">1</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Escolha estratégia e timeframe</h4>
               <p className="text-sm text-[#94A3B8]">Selecione MHI, 3 Mosqueteiros ou outra estratégia e a janela (2h, 4h, 24h).</p>
             </div>
-            <div className="rounded-2xl p-8 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
-              <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-6">
-                <span className="text-[#60A5FA] font-bold text-2xl">2</span>
+            <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+              <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">
+                <span className="text-[#60A5FA] font-bold text-3xl">2</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Catalogamos histórico e ciclos</h4>
               <p className="text-sm text-[#94A3B8]">O motor processa candles e classifica cada ciclo (P, G1, H) por ativo.</p>
             </div>
-            <div className="rounded-2xl p-8 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
-              <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-6">
-                <span className="text-[#60A5FA] font-bold text-2xl">3</span>
+            <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
+              <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">
+                <span className="text-[#60A5FA] font-bold text-3xl">3</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Ranking e consistência por ativo</h4>
               <p className="text-sm text-[#94A3B8]">Você vê os ativos mais assertivos e pode filtrar por min ciclos e Top N.</p>
@@ -279,20 +308,19 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Por que usar */}
-        <section className="px-4 sm:px-6 py-12 sm:py-14 border-t border-[#1E293B]/80">
+        {/* Diferencial */}
+        <section className="px-4 sm:px-6 py-14 sm:py-16 border-t border-[#1E293B]/80">
           <div className="max-w-4xl mx-auto rounded-2xl bg-[#0F172A] border border-[#1E293B] p-6 sm:p-8">
-            <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] mb-5">Por que usar o Aragon?</h3>
-            <ul className="space-y-3 text-[#94A3B8] text-sm sm:text-base">
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Ranking baseado em dados reais</li>
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Identificação de ativos com maior probabilidade</li>
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Interface simples e objetiva</li>
-            </ul>
+            <h3 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] mb-4">Pare de escolher ativos no achismo</h3>
+            <p className="text-[#94A3B8] text-sm sm:text-base leading-relaxed">
+              O Aragon transforma dados de mercado em um ranking claro de desempenho por ativo. Em vez de operar no escuro,
+              você enxerga quais cenários têm maior consistência e direciona suas decisões para o que realmente entrega resultado.
+            </p>
           </div>
         </section>
 
         {/* Planos */}
-        <section id="planos" className="px-4 sm:px-6 py-12 sm:py-16 border-t border-[#1E293B]/80 scroll-mt-6">
+        <section id="planos" className="px-4 sm:px-6 py-14 sm:py-18 border-t border-[#1E293B]/80 scroll-mt-6">
           <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-10">Planos</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* GRÁTIS */}
@@ -308,14 +336,14 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handlePlanCta("free")}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-colors"
+                  className="w-full py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-all shadow-md shadow-black/20 hover:shadow-lg hover:shadow-black/30"
                 >
                   Começar grátis
                 </button>
               ) : (
                 <Link
                   href={planQuery("free")}
-                  className="block w-full py-3 rounded-xl text-sm font-medium text-center bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-colors"
+                  className="block w-full py-3 rounded-xl text-sm font-medium text-center bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-all shadow-md shadow-black/20 hover:shadow-lg hover:shadow-black/30"
                 >
                   Começar grátis
                 </Link>
@@ -366,14 +394,14 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handlePlanCta("pro_plus")}
-                  className="w-full py-3 rounded-xl text-sm font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20"
+                  className="w-full py-3 rounded-xl text-sm font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
                 >
                   Assinar PRO+
                 </button>
               ) : (
                 <Link
                   href={planQuery("pro_plus")}
-                  className="block w-full py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20"
+                  className="block w-full py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
                 >
                   Assinar PRO+
                 </Link>
@@ -382,14 +410,31 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Roadmap */}
+        <section className="px-4 sm:px-6 py-14 sm:py-16 border-t border-[#1E293B]/80">
+          <div className="max-w-4xl mx-auto rounded-2xl bg-[#0F172A] border border-[#1E293B] p-6 sm:p-8">
+            <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] mb-5">O que vem por aí</h3>
+            <ul className="space-y-3 text-[#94A3B8] text-sm sm:text-base">
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Alertas inteligentes de mudança de ranking em tempo real</li>
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Comparador avançado entre estratégias e janelas de operação</li>
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Execução assistida com automações e recursos premium no painel</li>
+              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Histórico pessoal de performance com insights de melhoria</li>
+            </ul>
+          </div>
+        </section>
+
         {/* Footer */}
-        <footer className="px-4 sm:px-6 py-8 border-t border-[#1E293B]/80 text-center text-sm text-[#94A3B8]">
-          <p>ARAGON ANALYTICS</p>
-          <p className="mt-1">
-            <a href="#" className="hover:text-[#E5E7EB] transition-colors">Termos</a>
-            {" · "}
-            <a href="#" className="hover:text-[#E5E7EB] transition-colors">Contato</a>
-          </p>
+        <footer className="px-4 sm:px-6 py-10 border-t border-[#1E293B]/80">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#94A3B8]">
+            <p>ARAGON ANALYTICS</p>
+            <p className="flex items-center gap-3">
+              <a href="#" className="hover:text-[#E5E7EB] transition-colors">Termos</a>
+              <span>•</span>
+              <a href="#" className="hover:text-[#E5E7EB] transition-colors">Privacidade</a>
+              <span>•</span>
+              <a href="#" className="hover:text-[#E5E7EB] transition-colors">Contato</a>
+            </p>
+          </div>
         </footer>
       </main>
     </div>
