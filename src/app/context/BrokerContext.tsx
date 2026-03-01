@@ -5,8 +5,10 @@ import {
   fetchBrokerStatus,
   brokerConnect as apiBrokerConnect,
   brokerDisconnect as apiBrokerDisconnect,
+  getAuthToken,
   type BrokerStatus,
 } from "../api";
+import { useAuth } from "./AuthContext";
 
 export type BrokerStore = {
   connected: boolean;
@@ -32,6 +34,7 @@ const defaultStore: BrokerStore = {
 const BrokerContext = createContext<BrokerStore>(defaultStore);
 
 export function BrokerProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [connected, setConnected] = useState(false);
   const [accountType, setAccountType] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
@@ -40,6 +43,13 @@ export function BrokerProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
+    if (!getAuthToken()) {
+      setConnected(false);
+      setAccountType(null);
+      setBalance(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -58,9 +68,18 @@ export function BrokerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Refetch broker status quando o usuário (token) mudar — cada usuário tem sua própria corretora
   useEffect(() => {
+    if (!user) {
+      setConnected(false);
+      setAccountType(null);
+      setBalance(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     fetchStatus();
-  }, [fetchStatus]);
+  }, [user?.id, fetchStatus]);
 
   const connect = useCallback(
     async (email: string, password: string) => {
