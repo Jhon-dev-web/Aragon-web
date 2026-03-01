@@ -3,17 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
+import { billingCheckout, getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
 import { useAuth } from "./context/AuthContext";
 
-function ToastRecursoEmBreve({ onDismiss }: { onDismiss: () => void }) {
+function ToastInfo({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 5000);
     return () => clearTimeout(t);
   }, [onDismiss]);
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl bg-[#1F2937] border border-[#374151] text-[#E5E7EB] text-sm shadow-xl flex items-center gap-3">
-      <span>Recurso em breve.</span>
+      <span>{message}</span>
       <button type="button" onClick={onDismiss} className="p-1 rounded-lg hover:bg-white/10 text-[#9CA3AF]" aria-label="Fechar">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
@@ -77,7 +77,8 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [showToast, setShowToast] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Recurso em breve.");
+  const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export default function HomePage() {
     const params = new URLSearchParams(window.location.search);
     const toast = params.get("toast");
     if (toast === "recurso_em_breve") {
+      setToastMessage("Recurso em breve.");
       setShowToast(true);
       const url = new URL(window.location.href);
       url.searchParams.delete("toast");
@@ -116,11 +118,28 @@ export default function HomePage() {
 
   const planQuery = (plan: "free" | "advanced" | "pro_plus") => `/login?plan=${plan}`;
 
-  const handlePlanCta = (plan: "free" | "advanced" | "pro_plus") => {
-    if (getAuthToken()) {
-      setShowUpgradeModal(true);
-    } else {
+  const handlePlanCta = async (plan: "free" | "advanced" | "pro_plus") => {
+    const token = getAuthToken();
+    if (!token) {
       router.push(planQuery(plan));
+      return;
+    }
+    if (plan === "free") {
+      router.push("/probabilisticas");
+      return;
+    }
+    try {
+      setCheckoutPlanLoading(plan);
+      const checkout = await billingCheckout(plan);
+      if (!checkout.init_point) {
+        throw new Error("Checkout sem URL de redirecionamento");
+      }
+      window.location.href = checkout.init_point;
+    } catch (err) {
+      setToastMessage(err instanceof Error ? err.message : "Falha ao iniciar pagamento.");
+      setShowToast(true);
+    } finally {
+      setCheckoutPlanLoading(null);
     }
   };
 
@@ -144,33 +163,7 @@ export default function HomePage() {
         <div className="absolute top-1/3 right-1/4 w-20 h-28 border-l border-[#2563EB]/20 rounded-t" />
       </div>
 
-      {showToast && <ToastRecursoEmBreve onDismiss={() => setShowToast(false)} />}
-
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Upgrade em breve</h3>
-            <p className="text-sm text-[#9CA3AF] mb-6">
-              A assinatura de planos Avançado e PRO+ estará disponível em breve. Você já pode usar o plano Grátis em Probabilísticas.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-colors"
-              >
-                Fechar
-              </button>
-              <Link
-                href="/probabilisticas"
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white text-center transition-colors"
-              >
-                Ir ao painel
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      {showToast && <ToastInfo message={toastMessage} onDismiss={() => setShowToast(false)} />}
 
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#1E293B]/80 shrink-0 bg-[#0B1224]/70 backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-3">
@@ -366,9 +359,10 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handlePlanCta("advanced")}
+                  disabled={checkoutPlanLoading === "advanced"}
                   className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
-                  Assinar Avançado
+                  {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado"}
                 </button>
               ) : (
                 <Link
@@ -394,9 +388,10 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handlePlanCta("pro_plus")}
+                  disabled={checkoutPlanLoading === "pro_plus"}
                   className="w-full py-3 rounded-xl text-sm font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
                 >
-                  Assinar PRO+
+                  {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Assinar PRO+"}
                 </button>
               ) : (
                 <Link

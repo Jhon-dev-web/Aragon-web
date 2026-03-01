@@ -83,6 +83,30 @@ function authHeaders(extra?: HeadersInit): HeadersInit {
   return base;
 }
 
+export type BillingPlan = "advanced" | "pro_plus";
+export type BillingCheckoutResponse = { init_point: string; preference_id?: string };
+
+export async function billingCheckout(plan: BillingPlan): Promise<BillingCheckoutResponse> {
+  const r = await fetch(`${API_BASE}/billing/checkout`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ plan }),
+  });
+  const text = await r.text();
+  if (!r.ok) {
+    let detail = text;
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>;
+      const msg = parsed.detail ?? parsed.message ?? parsed.error;
+      if (typeof msg === "string" && msg.trim()) detail = msg;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail || "Falha ao iniciar checkout");
+  }
+  return JSON.parse(text) as BillingCheckoutResponse;
+}
+
 /** URL do WebSocket de mercado (candles em tempo quase real). Fallback: null = só atualização manual. */
 export function getMarketWsUrl(): string | null {
   if (typeof window === "undefined") return null;
