@@ -34,7 +34,13 @@ export function setAuthToken(token: string | null, email?: string, plan?: string
   }
 }
 
-export type MeResponse = { id: string; email: string; plan: string };
+export type MeResponse = {
+  id: string;
+  email: string;
+  plan: string;
+  plan_started_at?: string | null;
+  plan_expires_at?: string | null;
+};
 
 export function getStoredPlan(): string | null {
   return authStoreGetStoredPlan();
@@ -56,6 +62,10 @@ export async function fetchMe(): Promise<MeResponse | null> {
       id: String(data.id ?? ""),
       email: String(data.email ?? ""),
       plan: String(data.plan ?? "free"),
+      plan_started_at:
+        data.plan_started_at == null ? null : String(data.plan_started_at),
+      plan_expires_at:
+        data.plan_expires_at == null ? null : String(data.plan_expires_at),
     };
   } catch {
     return null;

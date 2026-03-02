@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import {
+  billingCheckout,
   fetchCatalogRanking,
   fetchCycles,
   getCyclesRequestUrl,
@@ -50,6 +51,13 @@ const MG_OPTIONS = [
 
 function isOtc(asset: string): boolean {
   return asset.toUpperCase().endsWith("-OTC");
+}
+
+function formatExpiry(iso?: string | null): string {
+  if (!iso) return "Sem expiração";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "Sem expiração";
+  return d.toLocaleDateString("pt-BR");
 }
 
 /** Mais assertivo: 1) maior win_total_rate, 2) empate = mais ciclos, 3) empate = menor HIT% */
@@ -528,6 +536,7 @@ function ProbabilisticasContent() {
   const broker = useBroker();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -638,6 +647,7 @@ function ProbabilisticasContent() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro ao atualizar ranking";
       setError(msg);
+      if (msg.includes("HTTP 403")) setShowUpgradeModal(true);
       consecutiveErrorsRef.current += 1;
       if (consecutiveErrorsRef.current >= 2) {
         setAutoRefreshEnabled(false);
@@ -714,6 +724,22 @@ function ProbabilisticasContent() {
   const cyclesTotal = rankingResult?.summary?.setups_total ?? rankingResult?.summary?.total ?? 0;
   const maxCyclesPerAsset = rankingResult?.debug?.max_setups_per_asset ?? 0;
   const fetchPagesUsed = rankingResult?.debug?.fetch_pages_used;
+  const currentPlanLabel =
+    user?.plan === "pro_plus" ? "PRO+" : user?.plan === "advanced" ? "Avançado" : "Grátis";
+  const planExpiryText = user?.plan === "advanced" ? ` · expira em ${formatExpiry(user?.plan_expires_at)}` : "";
+
+  const handleUpgradeCheckout = useCallback(async (plan: "advanced" | "pro_plus") => {
+    try {
+      setCheckoutPlanLoading(plan);
+      const checkout = await billingCheckout(plan);
+      if (!checkout.init_point) throw new Error("Checkout sem URL");
+      window.location.href = checkout.init_point;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao iniciar checkout");
+    } finally {
+      setCheckoutPlanLoading(null);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
@@ -774,18 +800,27 @@ function ProbabilisticasContent() {
             <p className="text-sm text-[#9CA3AF] mb-4">
               Seu plano atual limita estratégias e ativos. Assine Avançado ou PRO+ para liberar mais.
             </p>
-            <div className="flex gap-3">
-              <a
-                href="/#planos"
-                className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-center bg-[#2563EB] hover:bg-[#3B82F6] text-white"
-                onClick={() => setShowUpgradeModal(false)}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => handleUpgradeCheckout("advanced")}
+                disabled={checkoutPlanLoading !== null}
+                className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-center bg-gradient-to-r from-[#4F46E5] to-[#2563EB] hover:brightness-110 text-white disabled:opacity-60"
               >
-                Ver planos
-              </a>
+                {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$49,90/mês"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUpgradeCheckout("pro_plus")}
+                disabled={checkoutPlanLoading !== null}
+                className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white disabled:opacity-60"
+              >
+                {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Pro+ Vitalício R$249,90"}
+              </button>
               <button
                 type="button"
                 onClick={() => setShowUpgradeModal(false)}
-                className="px-4 py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB]"
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB]"
               >
                 Fechar
               </button>
@@ -806,6 +841,9 @@ function ProbabilisticasContent() {
         <div className="flex items-center gap-2 ml-auto shrink-0">
           <span className="text-xs text-[#9CA3AF] hidden sm:inline">
             Logado como: {maskEmail(user?.email ?? getCurrentUserEmail() ?? "")}
+          </span>
+          <span className="text-xs text-[#9CA3AF] hidden md:inline">
+            Plano: {currentPlanLabel}{planExpiryText}
           </span>
           <button
             type="button"
