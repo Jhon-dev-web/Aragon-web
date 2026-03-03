@@ -10,6 +10,7 @@ import {
   fetchHealth,
   getAuthToken,
   getCurrentUserEmail,
+  redeemPromoCode,
   type CatalogResponse,
   type CatalogByAsset,
   type CyclesResponse,
@@ -505,7 +506,7 @@ function savePrefs(prefs: Record<string, unknown>): void {
 function ProbabilisticasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { planLimits, user, loading: authLoading, logout } = useAuth();
+  const { planLimits, user, loading: authLoading, logout, fetchUser } = useAuth();
   const maxStrategies = planLimits.maxStrategies;
   const maxAssets = planLimits.maxAssets;
   const allowedStrategies = STRATEGIES.slice(0, maxStrategies);
@@ -537,6 +538,9 @@ function ProbabilisticasContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoFeedback, setPromoFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -727,6 +731,10 @@ function ProbabilisticasContent() {
   const currentPlanLabel =
     user?.plan === "pro_plus" ? "PRO+" : user?.plan === "advanced" ? "Avançado" : "Grátis";
   const planExpiryText = user?.plan === "advanced" ? ` · expira em ${formatExpiry(user?.plan_expires_at)}` : "";
+  const promoExpiryText =
+    user?.entitlement_expires_at && user?.entitlement_source
+      ? `${user.entitlement_source} até ${formatExpiry(user.entitlement_expires_at)}`
+      : null;
 
   const handleUpgradeCheckout = useCallback(async (plan: "advanced" | "pro_plus") => {
     try {
@@ -740,6 +748,32 @@ function ProbabilisticasContent() {
       setCheckoutPlanLoading(null);
     }
   }, []);
+
+  const handleRedeemPromo = useCallback(async () => {
+    const code = promoCode.trim();
+    if (!code) {
+      setPromoFeedback({ type: "error", text: "Informe um código promocional." });
+      return;
+    }
+    try {
+      setPromoLoading(true);
+      setPromoFeedback(null);
+      const result = await redeemPromoCode(code);
+      await fetchUser();
+      setPromoFeedback({
+        type: "success",
+        text: `Código ativado com sucesso. Benefício ativo até ${formatExpiry(result.expires_at)}.`,
+      });
+      setPromoCode("");
+    } catch (err) {
+      setPromoFeedback({
+        type: "error",
+        text: err instanceof Error ? err.message : "Falha ao ativar código.",
+      });
+    } finally {
+      setPromoLoading(false);
+    }
+  }, [promoCode, fetchUser]);
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
@@ -1039,6 +1073,43 @@ function ProbabilisticasContent() {
       </div>
 
       <main className="flex-1 px-3 py-4 pb-6 sm:px-4 sm:py-6">
+        <section className="mb-4 bg-[#111827] border border-[#1F2937] rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-[#E5E7EB] mb-2">Código promocional</h3>
+          <p className="text-xs text-[#9CA3AF] mb-3">
+            Status atual: {currentPlanLabel}
+            {planExpiryText}
+            {promoExpiryText ? ` · Promo: ${promoExpiryText}` : ""}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder="Digite seu código"
+              className="flex-1 bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleRedeemPromo}
+              disabled={promoLoading}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white"
+            >
+              {promoLoading ? "Ativando..." : "Ativar"}
+            </button>
+          </div>
+          {promoFeedback && (
+            <p
+              className={`mt-3 text-xs px-3 py-2 rounded-lg border ${
+                promoFeedback.type === "success"
+                  ? "bg-emerald-900/20 border-emerald-700/50 text-emerald-300"
+                  : "bg-red-900/20 border-red-700/50 text-red-300"
+              }`}
+            >
+              {promoFeedback.text}
+            </p>
+          )}
+        </section>
+
         {removedStrategyToast && (
           <div className="mb-4 bg-amber-900/30 border border-amber-500 rounded-xl px-4 py-2 text-amber-200 text-sm">
             Estratégia removida: usando MHI.

@@ -40,6 +40,9 @@ export type MeResponse = {
   plan: string;
   plan_started_at?: string | null;
   plan_expires_at?: string | null;
+  entitlement_expires_at?: string | null;
+  entitlement_source?: string | null;
+  premium_source?: string | null;
 };
 
 export function getStoredPlan(): string | null {
@@ -66,6 +69,12 @@ export async function fetchMe(): Promise<MeResponse | null> {
         data.plan_started_at == null ? null : String(data.plan_started_at),
       plan_expires_at:
         data.plan_expires_at == null ? null : String(data.plan_expires_at),
+      entitlement_expires_at:
+        data.entitlement_expires_at == null ? null : String(data.entitlement_expires_at),
+      entitlement_source:
+        data.entitlement_source == null ? null : String(data.entitlement_source),
+      premium_source:
+        data.premium_source == null ? null : String(data.premium_source),
     };
   } catch {
     return null;
@@ -115,6 +124,28 @@ export async function billingCheckout(plan: BillingPlan): Promise<BillingCheckou
     throw new Error(detail || "Falha ao iniciar checkout");
   }
   return JSON.parse(text) as BillingCheckoutResponse;
+}
+
+export type PromoRedeemResponse = { ok: boolean; source: string; expires_at: string };
+
+export async function redeemPromoCode(code: string): Promise<PromoRedeemResponse> {
+  const r = await fetch(`${API_BASE}/promo/redeem`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ code }),
+  });
+  const text = await r.text();
+  if (!r.ok) {
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>;
+      const detail = parsed.detail ?? parsed.message ?? parsed.error;
+      if (typeof detail === "string" && detail.trim()) throw new Error(detail);
+    } catch (e) {
+      if (e instanceof Error) throw e;
+    }
+    throw new Error(text || "Falha ao resgatar código promocional");
+  }
+  return JSON.parse(text) as PromoRedeemResponse;
 }
 
 /** URL do WebSocket de mercado (candles em tempo quase real). Fallback: null = só atualização manual. */
