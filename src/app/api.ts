@@ -148,6 +148,83 @@ export async function redeemPromoCode(code: string): Promise<PromoRedeemResponse
   return JSON.parse(text) as PromoRedeemResponse;
 }
 
+export type AdminPromoCode = {
+  id: string;
+  type: string;
+  is_active: boolean;
+  expires_at?: string | null;
+  max_redemptions?: number | null;
+  redemptions_count: number;
+  duration_days?: number | null;
+  created_at?: string | null;
+};
+
+export type AdminUserItem = {
+  id: string;
+  email: string;
+  created_at?: string | null;
+  saved_plan: string;
+  effective_plan: string;
+  access_tier: string;
+  plan_started_at?: string | null;
+  plan_expires_at?: string | null;
+  entitlement_expires_at?: string | null;
+  entitlement_source?: string | null;
+  is_admin_override?: boolean;
+};
+
+function adminHeaders(adminKey?: string, extra?: HeadersInit): HeadersInit {
+  const base = authHeaders(extra);
+  if (adminKey && adminKey.trim()) {
+    return { ...base, "X-ADMIN-KEY": adminKey.trim() };
+  }
+  return base;
+}
+
+export async function adminCreatePromo(
+  body: { code: string; duration_days?: number; max_redemptions?: number; expires_at?: string },
+  adminKey?: string
+): Promise<{ ok: boolean; id: string; duration_days: number }> {
+  const r = await fetch(`${API_BASE}/admin/promo/create`, {
+    method: "POST",
+    headers: adminHeaders(adminKey, { "Content-Type": "application/json" }),
+    body: JSON.stringify(body),
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || "Falha ao criar código");
+  return JSON.parse(text) as { ok: boolean; id: string; duration_days: number };
+}
+
+export async function adminRevokePromo(codeId: string, adminKey?: string): Promise<{ ok: boolean }> {
+  const r = await fetch(`${API_BASE}/admin/promo/${encodeURIComponent(codeId)}/revoke`, {
+    method: "POST",
+    headers: adminHeaders(adminKey),
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || "Falha ao revogar código");
+  return JSON.parse(text) as { ok: boolean };
+}
+
+export async function adminListPromoCodes(adminKey?: string, limit = 200): Promise<AdminPromoCode[]> {
+  const r = await fetch(`${API_BASE}/admin/promo/codes?limit=${limit}`, {
+    headers: adminHeaders(adminKey),
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || "Falha ao listar códigos");
+  const parsed = JSON.parse(text) as { codes?: AdminPromoCode[] };
+  return Array.isArray(parsed.codes) ? parsed.codes : [];
+}
+
+export async function adminListUsers(adminKey?: string, limit = 200): Promise<AdminUserItem[]> {
+  const r = await fetch(`${API_BASE}/admin/users?limit=${limit}`, {
+    headers: adminHeaders(adminKey),
+  });
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || "Falha ao listar usuários");
+  const parsed = JSON.parse(text) as { users?: AdminUserItem[] };
+  return Array.isArray(parsed.users) ? parsed.users : [];
+}
+
 /** URL do WebSocket de mercado (candles em tempo quase real). Fallback: null = só atualização manual. */
 export function getMarketWsUrl(): string | null {
   if (typeof window === "undefined") return null;
