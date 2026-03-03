@@ -105,11 +105,11 @@ function authHeaders(extra?: HeadersInit): HeadersInit {
 export type BillingPlan = "advanced" | "pro_plus";
 export type BillingCheckoutResponse = { init_point: string; preference_id?: string };
 
-export async function billingCheckout(plan: BillingPlan): Promise<BillingCheckoutResponse> {
+export async function billingCheckout(plan: BillingPlan, cpf?: string): Promise<BillingCheckoutResponse> {
   const r = await fetch(`${API_BASE}/billing/checkout`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ plan }),
+    body: JSON.stringify(cpf ? { plan, cpf } : { plan }),
   });
   const text = await r.text();
   if (!r.ok) {

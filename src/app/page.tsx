@@ -74,11 +74,15 @@ function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) 
 }
 
 export default function HomePage() {
+  const CPF_STORAGE_KEY = "aa_user_cpf";
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Recurso em breve.");
   const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
+  const [showCpfModal, setShowCpfModal] = useState(false);
+  const [cpfInput, setCpfInput] = useState("");
+  const [pendingPlan, setPendingPlan] = useState<"advanced" | "pro_plus" | null>(null);
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
   useEffect(() => {
@@ -92,6 +96,12 @@ export default function HomePage() {
       url.searchParams.delete("toast");
       window.history.replaceState({}, "", url.pathname + (url.search || ""));
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(CPF_STORAGE_KEY) || "";
+    if (saved) setCpfInput(saved);
   }, []);
 
   useEffect(() => {
@@ -118,6 +128,39 @@ export default function HomePage() {
 
   const planQuery = (plan: "free" | "advanced" | "pro_plus") => `/login?plan=${plan}`;
 
+  const onlyDigits = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+  const formatCpf = (value: string) => {
+    const d = onlyDigits(value);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
+  };
+
+  const handleConfirmCpfCheckout = async () => {
+    if (!pendingPlan) return;
+    const digits = onlyDigits(cpfInput);
+    if (digits.length !== 11) {
+      setToastMessage("CPF inválido. Informe os 11 dígitos.");
+      setShowToast(true);
+      return;
+    }
+    try {
+      setCheckoutPlanLoading(pendingPlan);
+      if (typeof window !== "undefined") window.localStorage.setItem(CPF_STORAGE_KEY, digits);
+      const checkout = await billingCheckout(pendingPlan, digits);
+      if (!checkout.init_point) throw new Error("Checkout sem URL de redirecionamento");
+      setShowCpfModal(false);
+      setPendingPlan(null);
+      window.location.href = checkout.init_point;
+    } catch (err) {
+      setToastMessage(err instanceof Error ? err.message : "Falha ao iniciar pagamento.");
+      setShowToast(true);
+    } finally {
+      setCheckoutPlanLoading(null);
+    }
+  };
+
   const handlePlanCta = async (plan: "free" | "advanced" | "pro_plus") => {
     const token = getAuthToken();
     if (!token) {
@@ -128,19 +171,8 @@ export default function HomePage() {
       router.push("/probabilisticas");
       return;
     }
-    try {
-      setCheckoutPlanLoading(plan);
-      const checkout = await billingCheckout(plan);
-      if (!checkout.init_point) {
-        throw new Error("Checkout sem URL de redirecionamento");
-      }
-      window.location.href = checkout.init_point;
-    } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : "Falha ao iniciar pagamento.");
-      setShowToast(true);
-    } finally {
-      setCheckoutPlanLoading(null);
-    }
+    setPendingPlan(plan);
+    setShowCpfModal(true);
   };
 
   return (
@@ -164,6 +196,43 @@ export default function HomePage() {
       </div>
 
       {showToast && <ToastInfo message={toastMessage} onDismiss={() => setShowToast(false)} />}
+      {showCpfModal && pendingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Confirmar CPF para pagamento</h3>
+            <p className="text-sm text-[#9CA3AF] mb-4">
+              Para habilitar o checkout em ambiente TEST, informe um CPF válido (11 dígitos).
+            </p>
+            <input
+              type="text"
+              value={formatCpf(cpfInput)}
+              onChange={(e) => setCpfInput(e.target.value)}
+              placeholder="000.000.000-00"
+              className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+            />
+            <div className="flex gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCpfModal(false);
+                  setPendingPlan(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCpfCheckout}
+                disabled={checkoutPlanLoading !== null}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors"
+              >
+                {checkoutPlanLoading ? "Abrindo..." : "Continuar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#1E293B]/80 shrink-0 bg-[#0B1224]/70 backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-3">

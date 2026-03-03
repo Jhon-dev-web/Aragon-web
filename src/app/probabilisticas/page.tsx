@@ -7,7 +7,6 @@ import {
   fetchCatalogRanking,
   fetchCycles,
   getCyclesRequestUrl,
-  fetchHealth,
   getAuthToken,
   getCurrentUserEmail,
   redeemPromoCode,
@@ -294,42 +293,42 @@ function RankingCard({
   const winTotalPct = (100 * winRate).toFixed(1);
 
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4 flex flex-col shadow-[0_0_20px_rgba(37,99,235,0.06)] hover:border-[#2563EB]/50 transition-colors">
+    <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-2.5 sm:p-3 flex flex-col shadow-[0_0_20px_rgba(37,99,235,0.06)] hover:border-[#2563EB]/50 transition-colors min-w-0">
       {/* HEADER: nome do ativo + badge OTC | OPEN */}
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="font-semibold text-[#E5E7EB] truncate">{symbolToLabel(row.asset)}</span>
-        <span className="shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-[#374151] text-[#9CA3AF]">
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <span className="font-semibold text-sm sm:text-base text-[#E5E7EB] truncate">{symbolToLabel(row.asset)}</span>
+        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#374151] text-[#9CA3AF]">
           {isOtc(row.asset) ? "OTC" : "OPEN"}
         </span>
       </div>
       {/* TÍTULO: nome da estratégia */}
-      <p className="text-xs text-[#9CA3AF] mb-2">{strategyName}</p>
+      <p className="text-[11px] text-[#9CA3AF] mb-1.5 truncate">{strategyName}</p>
       {/* MÉTRICA PRINCIPAL: Win total % */}
-      <div className="text-2xl font-bold text-[#22C55E] mb-1">{winTotalPct}%</div>
+      <div className="text-xl sm:text-2xl font-bold text-[#22C55E] mb-1">{winTotalPct}%</div>
       {/* SUBTEXTO: ciclos — wins / hits */}
-      <p className="text-xs text-[#9CA3AF] mb-3">
+      <p className="text-[11px] text-[#9CA3AF] mb-2">
         {cycles} ciclos — {wins} wins / {hit} hits
       </p>
       {/* LINHA DE DISTRIBUIÇÃO: P / G1 / HIT */}
-      <div className="flex flex-wrap gap-2 mb-3 text-xs">
-        <span className="px-2 py-1 rounded bg-[#1E3A5F] text-[#3B82F6]">P → {p}</span>
-        <span className="px-2 py-1 rounded bg-[#2E1F4F] text-[#A78BFA]">G1 → {g1}</span>
-        <span className="px-2 py-1 rounded bg-[#3F1F1F] text-[#EF4444]">HIT → {hit}</span>
+      <div className="flex flex-wrap gap-1.5 mb-2 text-[10px] sm:text-xs">
+        <span className="px-1.5 py-0.5 rounded bg-[#1E3A5F] text-[#3B82F6]">P {p}</span>
+        <span className="px-1.5 py-0.5 rounded bg-[#2E1F4F] text-[#A78BFA]">G1 {g1}</span>
+        <span className="px-1.5 py-0.5 rounded bg-[#3F1F1F] text-[#EF4444]">H {hit}</span>
       </div>
       {/* RODAPÉ */}
-      <p className="text-[10px] text-[#6B7280] mb-3">Último ciclo analisado: —</p>
-      <div className="mt-auto flex flex-col gap-2">
+      <p className="text-[10px] text-[#6B7280] mb-2">Último ciclo: —</p>
+      <div className="mt-auto flex flex-col sm:flex-row gap-1.5">
         <button
           type="button"
           onClick={onVerCiclos}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-[#0F172A] text-[#94A3B8] border border-[#334155] hover:bg-[#1E293B] hover:border-[#475569] transition-colors"
+          className="w-full py-1.5 rounded-lg text-xs font-medium bg-[#0F172A] text-[#94A3B8] border border-[#334155] hover:bg-[#1E293B] hover:border-[#475569] transition-colors"
         >
           Ver ciclos
         </button>
         <button
           type="button"
           onClick={onVerDetalhes}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
+          className="w-full py-1.5 rounded-lg text-xs font-medium bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
         >
           Ver detalhes
         </button>
@@ -521,7 +520,6 @@ function ProbabilisticasContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rankingResult, setRankingResult] = useState<CatalogResponse | null>(null);
-  const [serverNow, setServerNow] = useState<string | null>(null);
   const [detailsAsset, setDetailsAsset] = useState<CatalogByAsset | null>(null);
   const [cyclesModal, setCyclesModal] = useState<{
     symbol: string;
@@ -541,6 +539,7 @@ function ProbabilisticasContent() {
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoFeedback, setPromoFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -597,12 +596,6 @@ function ProbabilisticasContent() {
   const rankingControllerRef = useRef<AbortController | null>(null);
   const inFlightRef = useRef(false);
   const consecutiveErrorsRef = useRef(0);
-
-  useEffect(() => {
-    fetchHealth()
-      .then((h) => setServerNow(h.server_now))
-      .catch(() => setServerNow(null));
-  }, []);
 
   // Carregar estratégia de query ou localStorage; fallback se for estratégia removida
   useEffect(() => {
@@ -873,6 +866,13 @@ function ProbabilisticasContent() {
           </div>
         </Link>
         <div className="flex items-center gap-2 ml-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobileFiltersOpen(true)}
+            className="md:hidden px-3 py-1.5 rounded-lg text-xs font-medium border border-[#334155] text-[#E5E7EB] hover:bg-[#1F2937] transition-colors"
+          >
+            Filtros
+          </button>
           <span className="text-xs text-[#9CA3AF] hidden sm:inline">
             Logado como: {maskEmail(user?.email ?? getCurrentUserEmail() ?? "")}
           </span>
@@ -909,8 +909,31 @@ function ProbabilisticasContent() {
         </div>
       </header>
 
+      <div className="md:hidden sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-3 py-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileFiltersOpen(true)}
+            className="px-3 py-2 rounded-lg text-xs font-medium bg-[#111827] border border-[#334155] text-[#E5E7EB]"
+          >
+            Menu lateral
+          </button>
+          <button
+            type="button"
+            onClick={handleAtualizarRanking}
+            disabled={loading}
+            className="px-3 py-2 rounded-lg text-xs font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors"
+          >
+            {loading ? "Atualizando..." : "Atualizar"}
+          </button>
+          <span className="text-[11px] text-[#9CA3AF] ml-auto">
+            Ativos: {topN}/{maxAssets}
+          </span>
+        </div>
+      </div>
+
       {/* Topbar fixo com filtros */}
-      <div className="sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-4 py-3">
+      <div className="hidden md:block sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={strategy}
@@ -1063,14 +1086,112 @@ function ProbabilisticasContent() {
                 </span>
               </>
             )}
-            {serverNow && (
-              <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40">
-                {serverNow}
-              </span>
-            )}
           </div>
         </div>
       </div>
+
+      {mobileFiltersOpen && (
+        <>
+          <div className="md:hidden fixed inset-0 z-40 bg-black/60" onClick={() => setMobileFiltersOpen(false)} />
+          <aside className="md:hidden fixed top-0 left-0 bottom-0 z-50 w-[86%] max-w-[340px] bg-[#0B1220] border-r border-[#1F2937] p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[#E5E7EB]">Filtros</h3>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="px-2 py-1 rounded-md text-xs border border-[#334155] text-[#9CA3AF] hover:text-[#E5E7EB]"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="space-y-3">
+              <select
+                value={strategy}
+                onChange={(e) => setStrategy(e.target.value)}
+                className="w-full bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+              >
+                {allowedStrategies.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={windowMinutes}
+                onChange={(e) => setWindowMinutes(Number(e.target.value))}
+                className="w-full bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+              >
+                {WINDOWS.map((w) => (
+                  <option key={w.value} value={w.value}>
+                    {w.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={mgMode}
+                onChange={(e) => setMgMode(e.target.value)}
+                className="w-full bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+              >
+                {MG_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <label className="block">
+                <span className="text-xs text-[#9CA3AF]">Min ciclos</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={minSetups}
+                  onChange={(e) => setMinSetups(Number(e.target.value) || 10)}
+                  className="mt-1 w-full bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+                />
+              </label>
+              <select
+                value={topN}
+                onChange={(e) => setTopN(Number(e.target.value))}
+                className="w-full bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+              >
+                {allowedTopNOptions.map((n) => (
+                  <option key={n} value={n}>
+                    Top {n}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeOtc}
+                  onChange={(e) => setIncludeOtc(e.target.checked)}
+                  className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
+                />
+                <span className="text-xs text-[#9CA3AF]">mostrar OTC</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeOpen}
+                  onChange={(e) => setIncludeOpen(e.target.checked)}
+                  className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
+                />
+                <span className="text-xs text-[#9CA3AF]">mostrar aberto</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileFiltersOpen(false);
+                  handleAtualizarRanking();
+                }}
+                disabled={loading}
+                className="w-full px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors"
+              >
+                {loading ? "Atualizando..." : "Aplicar e atualizar"}
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
 
       <main className="flex-1 px-3 py-4 pb-6 sm:px-4 sm:py-6">
         <section className="mb-4 bg-[#111827] border border-[#1F2937] rounded-xl p-4">
@@ -1263,7 +1384,7 @@ function ProbabilisticasContent() {
                 </span>
               </p>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             {topList.map((row) => (
               <RankingCard
                 key={row.asset}
