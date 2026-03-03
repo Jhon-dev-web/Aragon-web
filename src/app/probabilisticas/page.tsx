@@ -293,10 +293,10 @@ function RankingCard({
   const winTotalPct = (100 * winRate).toFixed(1);
 
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-2.5 sm:p-3 flex flex-col shadow-[0_0_20px_rgba(37,99,235,0.06)] hover:border-[#2563EB]/50 transition-colors min-w-0">
+    <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-2 sm:p-3 lg:p-4 flex flex-col shadow-[0_0_20px_rgba(37,99,235,0.06)] hover:border-[#2563EB]/50 hover:-translate-y-[1px] transition-all min-w-0 min-h-[214px]">
       {/* HEADER: nome do ativo + badge OTC | OPEN */}
       <div className="flex items-center justify-between gap-1.5 mb-1.5">
-        <span className="font-semibold text-sm sm:text-base text-[#E5E7EB] truncate">{symbolToLabel(row.asset)}</span>
+        <span className="font-semibold text-sm lg:text-base text-[#E5E7EB] truncate">{symbolToLabel(row.asset)}</span>
         <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#374151] text-[#9CA3AF]">
           {isOtc(row.asset) ? "OTC" : "OPEN"}
         </span>
@@ -304,9 +304,9 @@ function RankingCard({
       {/* TÍTULO: nome da estratégia */}
       <p className="text-[11px] text-[#9CA3AF] mb-1.5 truncate">{strategyName}</p>
       {/* MÉTRICA PRINCIPAL: Win total % */}
-      <div className="text-xl sm:text-2xl font-bold text-[#22C55E] mb-1">{winTotalPct}%</div>
+      <div className="text-xl lg:text-3xl font-bold text-[#22C55E] mb-1">{winTotalPct}%</div>
       {/* SUBTEXTO: ciclos — wins / hits */}
-      <p className="text-[11px] text-[#9CA3AF] mb-2">
+      <p className="text-[10px] sm:text-[11px] text-[#9CA3AF] mb-2">
         {cycles} ciclos — {wins} wins / {hit} hits
       </p>
       {/* LINHA DE DISTRIBUIÇÃO: P / G1 / HIT */}
@@ -317,18 +317,18 @@ function RankingCard({
       </div>
       {/* RODAPÉ */}
       <p className="text-[10px] text-[#6B7280] mb-2">Último ciclo: —</p>
-      <div className="mt-auto flex flex-col sm:flex-row gap-1.5">
+      <div className="mt-auto flex flex-row gap-1.5">
         <button
           type="button"
           onClick={onVerCiclos}
-          className="w-full py-1.5 rounded-lg text-xs font-medium bg-[#0F172A] text-[#94A3B8] border border-[#334155] hover:bg-[#1E293B] hover:border-[#475569] transition-colors"
+          className="w-1/2 py-1.5 lg:py-2 rounded-lg text-[11px] lg:text-xs font-medium bg-[#0F172A] text-[#94A3B8] border border-[#334155] hover:bg-[#1E293B] hover:border-[#475569] transition-colors"
         >
           Ver ciclos
         </button>
         <button
           type="button"
           onClick={onVerDetalhes}
-          className="w-full py-1.5 rounded-lg text-xs font-medium bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
+          className="w-1/2 py-1.5 lg:py-2 rounded-lg text-[11px] lg:text-xs font-medium bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
         >
           Ver detalhes
         </button>
@@ -540,6 +540,7 @@ function ProbabilisticasContent() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoFeedback, setPromoFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [promoExpanded, setPromoExpanded] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -589,6 +590,11 @@ function ProbabilisticasContent() {
       });
     }
   }, [showOnboarding, strategy, windowMinutes, minSetups, topN, includeOtc, includeOpen, mgMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth < 640) setPromoExpanded(false);
+  }, []);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -858,27 +864,20 @@ function ProbabilisticasContent() {
 
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#1F2937] shrink-0">
         <Link href="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">AA</span>
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
+            <h1 className="text-base sm:text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
           </div>
         </Link>
         <div className="flex items-center gap-2 ml-auto shrink-0">
           <Link
             href="/admin"
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#93C5FD] hover:bg-[#1F2937] transition-colors"
+            className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#93C5FD] hover:bg-[#1F2937] transition-colors"
           >
             Admin
           </Link>
-          <button
-            type="button"
-            onClick={() => setMobileFiltersOpen(true)}
-            className="md:hidden px-3 py-1.5 rounded-lg text-xs font-medium border border-[#334155] text-[#E5E7EB] hover:bg-[#1F2937] transition-colors"
-          >
-            Filtros
-          </button>
           <span className="text-xs text-[#9CA3AF] hidden sm:inline">
             Logado como: {maskEmail(user?.email ?? getCurrentUserEmail() ?? "")}
           </span>
@@ -891,16 +890,16 @@ function ProbabilisticasContent() {
               logout();
               router.push("/login");
             }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#E5E7EB] hover:bg-[#1F2937] transition-colors"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#E5E7EB] hover:bg-[#1F2937] transition-colors"
           >
             Sair
           </button>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111827] border border-[#1F2937]">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111827] border border-[#1F2937]">
             <div className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold">
               {(user?.email ?? getCurrentUserEmail() ?? "U")[0]?.toUpperCase()}
             </div>
             <div className="flex flex-col items-start hidden sm:block">
-              <span className="text-xs text-[#E5E7EB] truncate max-w-[120px]">
+              <span className="text-xs text-[#E5E7EB] truncate max-w-[220px]">
                 {user?.email ?? getCurrentUserEmail() ?? "Usuário"}
               </span>
               <span className="text-[10px] text-[#9CA3AF]">
@@ -924,6 +923,12 @@ function ProbabilisticasContent() {
           >
             Menu lateral
           </button>
+          <Link
+            href="/admin"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#374151] text-[#93C5FD] hover:bg-[#1F2937] transition-colors"
+          >
+            Admin
+          </Link>
           <button
             type="button"
             onClick={handleAtualizarRanking}
@@ -936,137 +941,149 @@ function ProbabilisticasContent() {
             Ativos: {topN}/{maxAssets}
           </span>
         </div>
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-[11px] text-[#9CA3AF]">
+            {broker.connected ? "Corretora conectada" : "Corretora indisponível"}
+          </span>
+          <span className="text-[11px] text-[#9CA3AF]">
+            Plano: {currentPlanLabel}
+          </span>
+        </div>
       </div>
 
       {/* Topbar fixo com filtros */}
       <div className="hidden md:block sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-4 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={strategy}
-            onChange={(e) => setStrategy(e.target.value)}
-            className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-          >
-            {allowedStrategies.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={windowMinutes}
-            onChange={(e) => setWindowMinutes(Number(e.target.value))}
-            className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-          >
-            {WINDOWS.map((w) => (
-              <option key={w.value} value={w.value}>
-                {w.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={mgMode}
-            onChange={(e) => setMgMode(e.target.value)}
-            className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-          >
-            {MG_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <label className="flex items-center gap-2">
-            <span className="text-xs text-[#9CA3AF]">Min ciclos</span>
-            <input
-              type="number"
-              min={1}
-              value={minSetups}
-              onChange={(e) => setMinSetups(Number(e.target.value) || 10)}
-              className="w-20 bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-            />
-          </label>
-          <select
-            value={topN}
-            onChange={(e) => setTopN(Number(e.target.value))}
-            className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-          >
-            {allowedTopNOptions.map((n) => (
-              <option key={n} value={n}>
-                Top {n}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-[#9CA3AF]">
-            Ativos: {topN}/{maxAssets}
-          </span>
-          {user?.plan !== "pro_plus" && (
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(true)}
-              className="text-xs text-[#2563EB] hover:underline"
+        <div className="max-w-[1400px] mx-auto space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value)}
+              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
             >
-              Faça upgrade
-            </button>
-          )}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeOtc}
-              onChange={(e) => setIncludeOtc(e.target.checked)}
-              className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
-            />
-            <span className="text-xs text-[#9CA3AF]">mostrar OTC</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeOpen}
-              onChange={(e) => setIncludeOpen(e.target.checked)}
-              className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
-            />
-            <span className="text-xs text-[#9CA3AF]">mostrar aberto</span>
-          </label>
-          <button
-            type="button"
-            onClick={handleAtualizarRanking}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors flex items-center gap-2"
-          >
-            {loading ? (
-              <>
-                <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Atualizando…
-              </>
-            ) : (
-              "Atualizar ranking"
-            )}
-          </button>
-          {autoPausedByError ? (
-            <span className="px-2 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-200 border border-amber-600/50">
-              Auto pausado por erro
+              {allowedStrategies.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={windowMinutes}
+              onChange={(e) => setWindowMinutes(Number(e.target.value))}
+              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+            >
+              {WINDOWS.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={mgMode}
+              onChange={(e) => setMgMode(e.target.value)}
+              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+            >
+              {MG_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-2">
+              <span className="text-xs text-[#9CA3AF]">Min ciclos</span>
+              <input
+                type="number"
+                min={1}
+                value={minSetups}
+                onChange={(e) => setMinSetups(Number(e.target.value) || 10)}
+                className="w-20 bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+              />
+            </label>
+            <select
+              value={topN}
+              onChange={(e) => setTopN(Number(e.target.value))}
+              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
+            >
+              {allowedTopNOptions.map((n) => (
+                <option key={n} value={n}>
+                  Top {n}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-[#9CA3AF]">
+              Ativos: {topN}/{maxAssets}
             </span>
-          ) : autoRefreshEnabled ? (
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1.5 rounded-lg text-xs font-medium bg-[#166534]/30 text-[#86EFAC] border border-[#166534]/50">
-                Auto: ON (60s)
-              </span>
-              <span className="tabular-nums text-xs text-[#9CA3AF] min-w-[2.5rem]">
-                {String(Math.floor(countdownSeconds / 60)).padStart(2, "0")}:
-                {String(countdownSeconds % 60).padStart(2, "0")}
-              </span>
+            {user?.plan !== "pro_plus" && (
               <button
                 type="button"
-                onClick={stopAutoRefresh}
-                className="px-2 py-1.5 rounded-lg text-xs font-medium bg-[#1F2937] border border-[#374151] text-[#9CA3AF] hover:bg-[#374151] hover:text-[#E5E7EB]"
+                onClick={() => setShowUpgradeModal(true)}
+                className="text-xs text-[#2563EB] hover:underline"
               >
-                Parar
+                Faça upgrade
+              </button>
+            )}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeOtc}
+                onChange={(e) => setIncludeOtc(e.target.checked)}
+                className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
+              />
+              <span className="text-xs text-[#9CA3AF]">mostrar OTC</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeOpen}
+                onChange={(e) => setIncludeOpen(e.target.checked)}
+                className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
+              />
+              <span className="text-xs text-[#9CA3AF]">mostrar aberto</span>
+            </label>
+            <div className="ml-auto flex items-center gap-2">
+              {autoPausedByError ? (
+                <span className="px-2 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-200 border border-amber-600/50">
+                  Auto pausado por erro
+                </span>
+              ) : autoRefreshEnabled ? (
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1.5 rounded-lg text-xs font-medium bg-[#166534]/30 text-[#86EFAC] border border-[#166534]/50">
+                    Auto: ON (60s)
+                  </span>
+                  <span className="tabular-nums text-xs text-[#9CA3AF] min-w-[2.5rem]">
+                    {String(Math.floor(countdownSeconds / 60)).padStart(2, "0")}:
+                    {String(countdownSeconds % 60).padStart(2, "0")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={stopAutoRefresh}
+                    className="px-2 py-1.5 rounded-lg text-xs font-medium bg-[#1F2937] border border-[#374151] text-[#9CA3AF] hover:bg-[#374151] hover:text-[#E5E7EB]"
+                  >
+                    Parar
+                  </button>
+                </div>
+              ) : (
+                <span className="px-2 py-1.5 rounded-lg text-xs font-medium text-[#6B7280] border border-[#1F2937]">
+                  Auto: OFF
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleAtualizarRanking}
+                disabled={loading}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Atualizando…
+                  </>
+                ) : (
+                  "Atualizar ranking"
+                )}
               </button>
             </div>
-          ) : (
-            <span className="px-2 py-1.5 rounded-lg text-xs font-medium text-[#6B7280] border border-[#1F2937]">
-              Auto: OFF
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-3 flex-wrap">
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {rankingResult != null && rankingResult.debug && (
               <>
                 <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111827] border border-[#1F2937] text-[#9CA3AF]">
@@ -1199,41 +1216,54 @@ function ProbabilisticasContent() {
         </>
       )}
 
-      <main className="flex-1 px-3 py-4 pb-6 sm:px-4 sm:py-6">
-        <section className="mb-4 bg-[#111827] border border-[#1F2937] rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-[#E5E7EB] mb-2">Código promocional</h3>
-          <p className="text-xs text-[#9CA3AF] mb-3">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 py-4 pb-6 sm:px-4 sm:py-6">
+        <section className="mb-4 bg-[#111827] border border-[#1F2937] rounded-xl p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h3 className="text-sm font-semibold text-[#E5E7EB]">Código promocional</h3>
+            <button
+              type="button"
+              className="sm:hidden px-2 py-1 rounded-md text-[11px] border border-[#334155] text-[#9CA3AF]"
+              onClick={() => setPromoExpanded((v) => !v)}
+            >
+              {promoExpanded ? "Ocultar" : "Mostrar"}
+            </button>
+          </div>
+          <p className="text-xs text-[#9CA3AF] mb-2">
             Status atual: {currentPlanLabel}
             {planExpiryText}
             {promoExpiryText ? ` · Promo: ${promoExpiryText}` : ""}
           </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              placeholder="Digite seu código"
-              className="flex-1 bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleRedeemPromo}
-              disabled={promoLoading}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white"
-            >
-              {promoLoading ? "Ativando..." : "Ativar"}
-            </button>
-          </div>
-          {promoFeedback && (
-            <p
-              className={`mt-3 text-xs px-3 py-2 rounded-lg border ${
-                promoFeedback.type === "success"
-                  ? "bg-emerald-900/20 border-emerald-700/50 text-emerald-300"
-                  : "bg-red-900/20 border-red-700/50 text-red-300"
-              }`}
-            >
-              {promoFeedback.text}
-            </p>
+          {promoExpanded && (
+            <>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder="Digite seu código"
+                  className="flex-1 bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleRedeemPromo}
+                  disabled={promoLoading}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white"
+                >
+                  {promoLoading ? "Ativando..." : "Ativar"}
+                </button>
+              </div>
+              {promoFeedback && (
+                <p
+                  className={`mt-3 text-xs px-3 py-2 rounded-lg border ${
+                    promoFeedback.type === "success"
+                      ? "bg-emerald-900/20 border-emerald-700/50 text-emerald-300"
+                      : "bg-red-900/20 border-red-700/50 text-red-300"
+                  }`}
+                >
+                  {promoFeedback.text}
+                </p>
+              )}
+            </>
           )}
         </section>
 
