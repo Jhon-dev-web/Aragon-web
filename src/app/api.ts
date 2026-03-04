@@ -886,18 +886,29 @@ export async function authLogin(email: string, password: string): Promise<AuthTo
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+  const text = await r.text();
   if (!r.ok) {
-    const text = await r.text();
     let detail = text;
     try {
-      const j = JSON.parse(text) as any;
-      detail = j.detail ?? j.error ?? j.message ?? text;
+      const j = JSON.parse(text) as Record<string, unknown>;
+      detail = (j.detail ?? j.error ?? j.message ?? text) as string;
     } catch {
       // ignore
     }
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    throw new Error(typeof detail === "string" ? detail : "Erro ao entrar. Tente novamente.");
   }
-  const data = (await r.json()) as AuthTokenResponse;
+  if (!text || !text.trim()) {
+    throw new Error("Resposta inválida do servidor. Verifique se a API está no ar e tente novamente.");
+  }
+  let data: AuthTokenResponse;
+  try {
+    data = JSON.parse(text) as AuthTokenResponse;
+  } catch {
+    throw new Error("Resposta inválida do servidor. Verifique se a API está no ar e tente novamente.");
+  }
+  if (!data?.access_token) {
+    throw new Error("Resposta inválida do servidor. Tente novamente.");
+  }
   setAuthToken(data.access_token, email);
   return data;
 }
@@ -908,18 +919,29 @@ export async function authRegister(email: string, password: string): Promise<Aut
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+  const text = await r.text();
   if (!r.ok) {
-    const text = await r.text();
     let detail = text;
     try {
-      const j = JSON.parse(text) as any;
-      detail = j.detail ?? j.error ?? j.message ?? text;
+      const j = JSON.parse(text) as Record<string, unknown>;
+      detail = (j.detail ?? j.error ?? j.message ?? text) as string;
     } catch {
       // ignore
     }
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    throw new Error(typeof detail === "string" ? detail : "Erro ao criar conta. Tente novamente.");
   }
-  const data = (await r.json()) as AuthTokenResponse;
+  if (!text || !text.trim()) {
+    throw new Error("Resposta inválida do servidor. Verifique se a API está no ar e tente novamente.");
+  }
+  let data: AuthTokenResponse;
+  try {
+    data = JSON.parse(text) as AuthTokenResponse;
+  } catch {
+    throw new Error("Resposta inválida do servidor. Verifique se a API está no ar e tente novamente.");
+  }
+  if (!data?.access_token) {
+    throw new Error("Resposta inválida do servidor. Tente novamente.");
+  }
   setAuthToken(data.access_token, email);
   return data;
 }
