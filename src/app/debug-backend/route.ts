@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-static";
+
 const PRODUCTION_FALLBACK = "https://aragon-api.onrender.com";
 const DEV_FALLBACK = "http://127.0.0.1:8000";
 
