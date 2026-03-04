@@ -102,6 +102,17 @@ function authHeaders(extra?: HeadersInit): HeadersInit {
   return base;
 }
 
+/** Evita "Unexpected end of JSON input" quando o servidor retorna corpo vazio ou não-JSON. */
+function safeParseJson<T>(text: string, msg = "Resposta inválida do servidor. Tente novamente."): T {
+  const t = (text || "").trim();
+  if (!t) throw new Error(msg);
+  try {
+    return JSON.parse(t) as T;
+  } catch {
+    throw new Error(msg);
+  }
+}
+
 export type BillingPlan = "advanced" | "pro_plus";
 export type BillingCheckoutResponse = { init_point: string; preference_id?: string };
 
@@ -123,7 +134,7 @@ export async function billingCheckout(plan: BillingPlan, cpf?: string): Promise<
     }
     throw new Error(detail || "Falha ao iniciar checkout");
   }
-  return JSON.parse(text) as BillingCheckoutResponse;
+  return safeParseJson<BillingCheckoutResponse>(text);
 }
 
 export type PromoRedeemResponse = { ok: boolean; source: string; expires_at: string };
@@ -374,8 +385,9 @@ export async function fetchCandles(
     `${API_BASE}/candles/last?asset=${encodeURIComponent(asset)}&n=${n}`,
     { signal, timeoutMs: FETCH_TIMEOUT_MS, headers: authHeaders() }
   );
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || `Erro ${r.status}`);
+  return safeParseJson<CandleItem[]>(text);
 }
 
 export async function fetchSignal(asset: string, strategy: "aggressive" | "normal", window_sec: number = 2): Promise<SignalResponse> {
@@ -384,8 +396,9 @@ export async function fetchSignal(asset: string, strategy: "aggressive" | "norma
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ asset, strategy, window_sec }),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || `Erro ${r.status}`);
+  return safeParseJson<SignalResponse>(text);
 }
 
 /** Analisa confluências e retorna direção CALL/PUT com pontuação e detalhes. */
@@ -395,8 +408,9 @@ export async function fetchSignalsAnalyze(symbol: string, timeframe: number = 60
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ symbol, timeframe }),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || `Erro ${r.status}`);
+  return safeParseJson<SignalsAnalyzeResponse>(text);
 }
 
 export async function fetchCatalogMhi(asset: string, minutes: number = 120): Promise<CatalogMhiResponse> {
@@ -405,8 +419,9 @@ export async function fetchCatalogMhi(asset: string, minutes: number = 120): Pro
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ asset, minutes }),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || `Erro ${r.status}`);
+  return safeParseJson<CatalogMhiResponse>(text);
 }
 
 // ----- Catalog batch (ranking MHI por ativos) -----
@@ -549,8 +564,8 @@ export async function fetchCatalogRanking(
     throw e;
   }
   clearTimeout(timeoutId);
+  const text = await r.text();
   if (!r.ok) {
-    const text = await r.text();
     const friendly = friendlyMessageIfHtml(r.status, text);
     if (friendly) throw new Error(friendly);
     if (r.status === 400) {
@@ -574,7 +589,7 @@ export async function fetchCatalogRanking(
       throw new Error(`Serviço indisponível: ${detail}. Verifique conexão com a corretora no perfil (topo direito).`);
     throw new Error(`HTTP ${r.status}: ${detail}`);
   }
-  return r.json();
+  return safeParseJson<CatalogResponse>(text);
 }
 
 // ----- Ativos (compartilhado Análise + Probabilísticas) -----
@@ -675,9 +690,10 @@ export async function fetchCycles(params: {
     console.log("[fetchCycles] response status:", r.status);
   }
 
-  if (!r.ok) throw new Error(`Ciclos: ${r.status}`);
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || `Ciclos: ${r.status}`);
 
-  const data = (await r.json()) as CyclesResponse;
+  const data = safeParseJson<CyclesResponse>(text);
 
   if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console
@@ -736,8 +752,9 @@ export async function fetchExecutorStatus(): Promise<ExecutorStatus> {
   const r = await fetch(`${API_BASE}/executor/status`, {
     headers: authHeaders(),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<ExecutorStatus>(text);
 }
 
 export async function executorStart(riskConfig?: ExecutorRiskConfig): Promise<{ ok: boolean; message: string }> {
@@ -746,8 +763,9 @@ export async function executorStart(riskConfig?: ExecutorRiskConfig): Promise<{ 
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(riskConfig ? { riskConfig } : {}),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<{ ok: boolean; message: string }>(text);
 }
 
 export async function executorStop(): Promise<{ ok: boolean; message: string }> {
@@ -755,16 +773,18 @@ export async function executorStop(): Promise<{ ok: boolean; message: string }> 
     method: "POST",
     headers: authHeaders(),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<{ ok: boolean; message: string }>(text);
 }
 
 export async function fetchExecutorTrades(limit = 50): Promise<{ trades: ExecutorTrade[] }> {
   const r = await fetch(`${API_BASE}/executor/trades?limit=${limit}`, {
     headers: authHeaders(),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<{ trades: ExecutorTrade[] }>(text);
 }
 
 export async function fetchExecutorLogs(limit = 50, tradeId?: string): Promise<{ logs: ExecutorLog[] }> {
@@ -772,8 +792,9 @@ export async function fetchExecutorLogs(limit = 50, tradeId?: string): Promise<{
     ? `${API_BASE}/executor/logs?limit=${limit}&tradeId=${encodeURIComponent(tradeId)}`
     : `${API_BASE}/executor/logs?limit=${limit}`;
   const r = await fetch(url, { headers: authHeaders() });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<{ logs: ExecutorLog[] }>(text);
 }
 
 export type ExecutorExecuteResponse = {
@@ -812,8 +833,9 @@ export async function executorExecute(params: {
       ...(params.amount != null && params.amount > 0 ? { amount: params.amount } : {}),
     }),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<ExecutorExecuteResponse>(text);
 }
 
 // ----- Broker (mesmo fluxo do CLI: Bullex + connect) -----
@@ -836,8 +858,9 @@ export async function fetchBrokerStatus(): Promise<BrokerStatus> {
   const r = await fetch(`${API_BASE}/broker/status`, {
     headers: authHeaders(),
   });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || String(r.status));
+  return safeParseJson<BrokerStatus>(text);
 }
 
 export async function brokerConnect(body: {
@@ -849,17 +872,18 @@ export async function brokerConnect(body: {
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
+  const text = await r.text();
   if (!r.ok) {
-    let msg = await r.text();
+    let msg = text;
     try {
-      const j = JSON.parse(msg) as any;
-      msg = j.detail ?? j.error ?? j.message ?? msg;
+      const j = JSON.parse(text) as Record<string, unknown>;
+      msg = (j.detail ?? j.error ?? j.message ?? text) as string;
     } catch {
       // ignore
     }
-    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+    throw new Error(typeof msg === "string" ? msg : "Erro ao conectar.");
   }
-  return r.json();
+  return safeParseJson<BrokerConnectResponse>(text);
 }
 
 export async function brokerDisconnect(): Promise<void> {
@@ -951,17 +975,22 @@ export async function authRegister(email: string, password: string): Promise<Aut
 export async function fetchAssets(): Promise<AssetOption[]> {
   const url = `${API_BASE}/assets`;
   const r = await fetch(url, { headers: authHeaders() });
+  const text = await r.text();
   if (!r.ok) {
-    const body = await r.json().catch(() => ({} as Record<string, unknown>));
-    const details =
-      ((body as any).details ?? (body as any).error ?? r.statusText) || String(r.status);
-    console.error("GET /assets failed", r.status, url, body);
+    let details = text;
+    try {
+      const body = JSON.parse(text) as Record<string, unknown>;
+      details = (body.details ?? body.error ?? body.detail ?? text) as string;
+    } catch {
+      // keep details as text
+    }
+    console.error("GET /assets failed", r.status, url, text);
     throw new Error(
       details ? `Falha ao buscar ativos: ${details}` : `Falha ao buscar ativos (${r.status})`
     );
   }
-  const raw = await r.json();
-  const data: AssetOption[] = (raw && Array.isArray(raw.assets) ? raw.assets : raw) as AssetOption[];
+  const raw = safeParseJson<{ assets?: AssetOption[] } | AssetOption[]>(text, "Resposta inválida ao buscar ativos.");
+  const data: AssetOption[] = (raw && Array.isArray((raw as { assets?: AssetOption[] }).assets) ? (raw as { assets: AssetOption[] }).assets : raw) as AssetOption[];
   if (!data.length) {
     // Debug quando a lista vier vazia
     // eslint-disable-next-line no-console
