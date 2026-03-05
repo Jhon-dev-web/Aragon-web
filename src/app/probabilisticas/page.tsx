@@ -830,9 +830,10 @@ function ProbabilisticasContent() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
           <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 w-full max-w-md shadow-xl">
             <h2 className="text-lg font-semibold text-[#E5E7EB] mb-2">Faça upgrade</h2>
-            <p className="text-sm text-[#9CA3AF] mb-4">
+            <p className="text-sm text-[#9CA3AF] mb-2">
               Seu plano atual limita estratégias e ativos. Assine Avançado ou PRO+ para liberar mais.
             </p>
+            <p className="text-xs text-[#6B7280] mb-4">Pagamento via PIX ou cartão (Mercado Pago)</p>
             <div className="space-y-3">
               <button
                 type="button"

@@ -200,9 +200,10 @@ export default function HomePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Confirmar CPF para pagamento</h3>
-            <p className="text-sm text-[#9CA3AF] mb-4">
+            <p className="text-sm text-[#9CA3AF] mb-2">
               Para habilitar o checkout em ambiente TEST, informe um CPF válido (11 dígitos).
             </p>
+            <p className="text-xs text-[#6B7280] mb-4">Pagamento via PIX ou cartão (Mercado Pago)</p>
             <input
               type="text"
               value={formatCpf(cpfInput)}
@@ -383,7 +384,8 @@ export default function HomePage() {
 
         {/* Planos */}
         <section id="planos" className="px-4 sm:px-6 py-14 sm:py-18 border-t border-[#1E293B]/80 scroll-mt-6">
-          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-10">Planos</h3>
+          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-2">Planos</h3>
+          <p className="text-center text-[#94A3B8] text-sm mb-10">Pagamento via PIX ou cartão (Mercado Pago)</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* GRÁTIS */}
             <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
