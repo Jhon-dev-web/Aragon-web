@@ -535,6 +535,7 @@ function ProbabilisticasContent() {
   const broker = useBroker();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeCpf, setUpgradeCpf] = useState("");
   const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
@@ -735,10 +736,19 @@ function ProbabilisticasContent() {
       ? `${user.entitlement_source} até ${formatExpiry(user.entitlement_expires_at)}`
       : null;
 
+  const onlyDigits = (s: string) => s.replace(/\D/g, "").slice(0, 11);
+  const formatCpfDisplay = (s: string) => {
+    const d = onlyDigits(s);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  };
+
   const handleUpgradeCheckout = useCallback(async (plan: "advanced" | "pro_plus") => {
     try {
       setCheckoutPlanLoading(plan);
-      const checkout = await billingCheckout(plan);
+      const cpfDigits = onlyDigits(upgradeCpf);
+      const checkout = await billingCheckout(plan, cpfDigits.length === 11 ? cpfDigits : undefined);
       if (!checkout.init_point) throw new Error("Checkout sem URL");
       window.location.href = checkout.init_point;
     } catch (err) {
@@ -746,7 +756,7 @@ function ProbabilisticasContent() {
     } finally {
       setCheckoutPlanLoading(null);
     }
-  }, []);
+  }, [upgradeCpf]);
 
   const handleRedeemPromo = useCallback(async () => {
     const code = promoCode.trim();
@@ -833,7 +843,17 @@ function ProbabilisticasContent() {
             <p className="text-sm text-[#9CA3AF] mb-2">
               Seu plano atual limita estratégias e ativos. Assine Avançado ou PRO+ para liberar mais.
             </p>
-            <p className="text-xs text-[#6B7280] mb-4">Pagamento via PIX ou cartão (Mercado Pago)</p>
+            <p className="text-xs text-[#6B7280] mb-2">Pagamento via PIX ou cartão (Mercado Pago)</p>
+            <p className="text-xs text-[#6B7280] mb-3">
+              CPF (opcional): evita campos em branco na página do Mercado Pago e ajuda o botão &quot;Pagar&quot; a habilitar.
+            </p>
+            <input
+              type="text"
+              value={formatCpfDisplay(upgradeCpf)}
+              onChange={(e) => setUpgradeCpf(e.target.value)}
+              placeholder="000.000.000-00"
+              className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] placeholder-[#6B7280] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none mb-4"
+            />
             <div className="space-y-3">
               <button
                 type="button"
