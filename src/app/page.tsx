@@ -352,7 +352,7 @@ export default function HomePage() {
                 <span className="text-[#60A5FA] font-bold text-3xl">1</span>
               </div>
               <h4 className="font-semibold text-[#E5E7EB] mb-2">Escolha estratégia e timeframe</h4>
-              <p className="text-sm text-[#94A3B8]">Selecione MHI, 3 Mosqueteiros ou outra estratégia e a janela (2h, 4h, 24h).</p>
+              <p className="text-sm text-[#94A3B8]">Selecione MHI, MILHÃO MINORIA, 3 Mosqueteiros ou outra estratégia e a janela (2h, 4h, 24h).</p>
             </div>
             <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
               <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">

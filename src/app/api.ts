@@ -572,7 +572,7 @@ export async function fetchCatalogRanking(
       try {
         const j = JSON.parse(text);
         if (j.detail === "strategy_not_supported")
-          throw new Error("Estratégia não suportada. Use MHI.");
+          throw new Error("Estratégia não suportada. Use MHI (mhi) ou MILHÃO MINORIA (milhao).");
       } catch (e) {
         if (e instanceof Error) throw e;
       }
@@ -611,7 +611,7 @@ export type CyclesResponse = {
 const cyclesCache = new Map<string, { data: CyclesResponse; ts: number }>();
 const CACHE_TTL_MS = 60_000;
 
-/** Backend espera: mhi | padrao23 | 3mosq (lowercase). */
+/** Backend espera: mhi | milhao | padrao23 | 3mosq (lowercase). */
 export function mapStrategyUiToApi(ui: string): string {
   const s = (ui || "mhi").trim().toLowerCase();
   if (s === "mosqueteiros_rep" || s === "3 mosqueteiros") return "3mosq";

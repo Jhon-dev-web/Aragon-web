@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+/**
+ * Aragon Analytics — Dashboard de probabilidade e ranking.
+ * Refatoração UI/UX: apenas layout e apresentação; endpoints, cálculos e dados inalterados.
+ * Componentes: HeaderBar, KpiRow, PromoCodeCard, BestNowHighlight, FilterBar, PairCard.
+ * Ordenação (assertividade/score/ciclos) e "Atualizado há" são apenas no front.
+ */
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import Link from "next/link";
 import {
   billingCheckout,
@@ -18,13 +24,15 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useBroker } from "../context/BrokerContext";
 import { useSearchParams, useRouter } from "next/navigation";
-
-function maskEmail(email: string): string {
-  if (!email || !email.includes("@")) return email || "—";
-  const [local, domain] = email.split("@");
-  if (local.length <= 2) return "***@" + (domain?.slice(0, 2) ?? "") + "***";
-  return local.slice(0, 2) + "***@" + (domain?.slice(0, 2) ?? "") + "***";
-}
+import { isOtc, symbolToLabel } from "./utils";
+import {
+  HeaderBar,
+  KpiRow,
+  PromoCodeCard,
+  BestNowHighlight,
+  FilterBar,
+  PairCard,
+} from "./components";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -36,6 +44,7 @@ const WINDOWS = [
 
 const STRATEGIES = [
   { value: "mhi", label: "MHI" },
+  { value: "milhao", label: "MILHÃO MINORIA" },
   { value: "3mosq", label: "3 Mosqueteiros (Repetição)" },
   { value: "padrao23", label: "Padrão 23" },
 ];
@@ -48,10 +57,6 @@ const MG_OPTIONS = [
   { value: "off", label: "OFF" },
   { value: "mg1", label: "MG1" },
 ];
-
-function isOtc(asset: string): boolean {
-  return asset.toUpperCase().endsWith("-OTC");
-}
 
 function formatExpiry(iso?: string | null): string {
   if (!iso) return "Sem expiração";
@@ -75,15 +80,6 @@ function getMostAssertiveAsset(list: CatalogByAsset[]): CatalogByAsset | null {
     return hitA - hitB;
   });
   return sorted[0] ?? null;
-}
-
-/** Símbolo para label exibível: EURUSD -> EUR/USD, EURUSD-OTC -> EUR/USD */
-function symbolToLabel(symbol: string): string {
-  const base = symbol.replace(/-OTC$/i, "").trim();
-  if (base.length === 6 && /^[A-Z]+$/i.test(base)) {
-    return `${base.slice(0, 3)}/${base.slice(3)}`;
-  }
-  return base;
 }
 
 const OUTCOME_COLORS: Record<string, { bg: string; text: string }> = {
@@ -270,70 +266,6 @@ function CyclesModal({
         </div>
       </div>
     </>
-  );
-}
-
-function RankingCard({
-  row,
-  strategyName,
-  onVerDetalhes,
-  onVerCiclos,
-}: {
-  row: CatalogByAsset;
-  strategyName: string;
-  onVerDetalhes: () => void;
-  onVerCiclos: () => void;
-}) {
-  const cycles = row.cycles ?? row.total;
-  const wins = row.wins ?? row.win_no_mg + row.win_with_mg;
-  const p = row.p ?? row.win_no_mg;
-  const g1 = row.g1 ?? row.win_with_mg;
-  const hit = row.hit ?? row.loss;
-  const winRate = row.win_rate ?? row.win_total_rate;
-  const winTotalPct = (100 * winRate).toFixed(1);
-
-  return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-2 sm:p-3 lg:p-4 flex flex-col shadow-[0_0_20px_rgba(37,99,235,0.06)] hover:border-[#2563EB]/50 hover:-translate-y-[1px] transition-all min-w-0 min-h-[214px]">
-      {/* HEADER: nome do ativo + badge OTC | OPEN */}
-      <div className="flex items-center justify-between gap-1.5 mb-1.5">
-        <span className="font-semibold text-sm lg:text-base text-[#E5E7EB] truncate">{symbolToLabel(row.asset)}</span>
-        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#374151] text-[#9CA3AF]">
-          {isOtc(row.asset) ? "OTC" : "OPEN"}
-        </span>
-      </div>
-      {/* TÍTULO: nome da estratégia */}
-      <p className="text-[11px] text-[#9CA3AF] mb-1.5 truncate">{strategyName}</p>
-      {/* MÉTRICA PRINCIPAL: Win total % */}
-      <div className="text-xl lg:text-3xl font-bold text-[#22C55E] mb-1">{winTotalPct}%</div>
-      {/* SUBTEXTO: ciclos — wins / hits */}
-      <p className="text-[10px] sm:text-[11px] text-[#9CA3AF] mb-2">
-        {cycles} ciclos — {wins} wins / {hit} hits
-      </p>
-      {/* LINHA DE DISTRIBUIÇÃO: P / G1 / HIT */}
-      <div className="flex flex-wrap gap-1.5 mb-2 text-[10px] sm:text-xs">
-        <span className="px-1.5 py-0.5 rounded bg-[#1E3A5F] text-[#3B82F6]">P {p}</span>
-        <span className="px-1.5 py-0.5 rounded bg-[#2E1F4F] text-[#A78BFA]">G1 {g1}</span>
-        <span className="px-1.5 py-0.5 rounded bg-[#3F1F1F] text-[#EF4444]">H {hit}</span>
-      </div>
-      {/* RODAPÉ */}
-      <p className="text-[10px] text-[#6B7280] mb-2">Último ciclo: —</p>
-      <div className="mt-auto flex flex-row gap-1.5">
-        <button
-          type="button"
-          onClick={onVerCiclos}
-          className="w-1/2 py-1.5 lg:py-2 rounded-lg text-[11px] lg:text-xs font-medium bg-[#0F172A] text-[#94A3B8] border border-[#334155] hover:bg-[#1E293B] hover:border-[#475569] transition-colors"
-        >
-          Ver ciclos
-        </button>
-        <button
-          type="button"
-          onClick={onVerDetalhes}
-          className="w-1/2 py-1.5 lg:py-2 rounded-lg text-[11px] lg:text-xs font-medium bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
-        >
-          Ver detalhes
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -542,6 +474,15 @@ function ProbabilisticasContent() {
   const [promoFeedback, setPromoFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [promoExpanded, setPromoExpanded] = useState(true);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [, setTick] = useState(0);
+  const [sortOrder, setSortOrder] = useState<"assertividade" | "score" | "ciclos">("assertividade");
+
+  useEffect(() => {
+    if (lastUpdatedAt == null) return;
+    const t = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, [lastUpdatedAt]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -647,6 +588,7 @@ function ProbabilisticasContent() {
         rankingControllerRef.current.signal
       );
       setRankingResult(data);
+      setLastUpdatedAt(Date.now());
       consecutiveErrorsRef.current = 0;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro ao atualizar ranking";
@@ -669,6 +611,16 @@ function ProbabilisticasContent() {
     setCountdownSeconds(60);
     fetchRanking();
   }, [fetchRanking]);
+
+  const clearFilters = useCallback(() => {
+    setStrategy("mhi");
+    setWindowMinutes(120);
+    setMgMode("mg1");
+    setMinSetups(10);
+    setTopN(Math.min(5, maxAssets));
+    setIncludeOtc(true);
+    setIncludeOpen(true);
+  }, [maxAssets]);
 
   const stopAutoRefresh = useCallback(() => {
     setAutoRefreshEnabled(false);
@@ -722,10 +674,44 @@ function ProbabilisticasContent() {
     };
   }, []);
 
+  // Ao mudar de estratégia, atualizar o ranking automaticamente (evita primeiro render)
+  const strategyChangedRef = useRef(false);
+  useEffect(() => {
+    if (!strategyChangedRef.current) {
+      strategyChangedRef.current = true;
+      return;
+    }
+    fetchRanking();
+  }, [strategy, fetchRanking]);
+
   const topList = Array.isArray(rankingResult?.top) ? rankingResult.top : [];
+  const sortedTopList = useMemo(() => {
+    const list = [...topList];
+    if (sortOrder === "assertividade") {
+      list.sort((a, b) => {
+        const ra = a.win_total_rate ?? a.win_rate ?? 0;
+        const rb = b.win_total_rate ?? b.win_rate ?? 0;
+        return rb - ra;
+      });
+    } else if (sortOrder === "score") {
+      list.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    } else {
+      list.sort((a, b) => (b.cycles ?? b.total ?? 0) - (a.cycles ?? a.total ?? 0));
+    }
+    return list;
+  }, [topList, sortOrder]);
   const hasNoResults = rankingResult != null && (topList.length === 0 || (rankingResult.count_ranked ?? 0) === 0);
   const mostAssertive = getMostAssertiveAsset(topList);
   const cyclesTotal = rankingResult?.summary?.setups_total ?? rankingResult?.summary?.total ?? 0;
+
+  const lastUpdatedLabel = lastUpdatedAt
+    ? (() => {
+        const sec = Math.floor((Date.now() - lastUpdatedAt) / 1000);
+        if (sec < 60) return "agora";
+        const min = Math.floor(sec / 60);
+        return min === 1 ? "1 min" : `${min} min`;
+      })()
+    : null;
   const maxCyclesPerAsset = rankingResult?.debug?.max_setups_per_asset ?? 0;
   const fetchPagesUsed = rankingResult?.debug?.fetch_pages_used;
   const currentPlanLabel =
@@ -883,57 +869,22 @@ function ProbabilisticasContent() {
         </div>
       )}
 
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[#1F2937] shrink-0">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">AA</span>
-          </div>
-          <div>
-            <h1 className="text-base sm:text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
-          </div>
-        </Link>
-        <div className="flex items-center gap-2 ml-auto shrink-0">
-          <Link
-            href="/admin"
-            className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#93C5FD] hover:bg-[#1F2937] transition-colors"
-          >
-            Admin
-          </Link>
-          <span className="text-xs text-[#9CA3AF] hidden sm:inline">
-            Logado como: {maskEmail(user?.email ?? getCurrentUserEmail() ?? "")}
-          </span>
-          <span className="text-xs text-[#9CA3AF] hidden md:inline">
-            Plano: {currentPlanLabel}{planExpiryText}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              router.push("/login");
-            }}
-            className="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium border border-[#374151] text-[#E5E7EB] hover:bg-[#1F2937] transition-colors"
-          >
-            Sair
-          </button>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111827] border border-[#1F2937]">
-            <div className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold">
-              {(user?.email ?? getCurrentUserEmail() ?? "U")[0]?.toUpperCase()}
-            </div>
-            <div className="flex flex-col items-start hidden sm:block">
-              <span className="text-xs text-[#E5E7EB] truncate max-w-[220px]">
-                {user?.email ?? getCurrentUserEmail() ?? "Usuário"}
-              </span>
-              <span className="text-[10px] text-[#9CA3AF]">
-                {broker.loading
-                  ? "Verificando corretora…"
-                  : broker.connected
-                  ? "Corretora conectada"
-                  : "Corretora indisponível"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
+      <HeaderBar
+        userEmail={user?.email ?? getCurrentUserEmail() ?? ""}
+        planLabel={currentPlanLabel}
+        planExpiryText={planExpiryText}
+        brokerStatus={
+          broker.loading
+            ? "Verificando corretora…"
+            : broker.connected
+            ? "Corretora conectada"
+            : "Corretora indisponível"
+        }
+        onLogout={() => {
+          logout();
+          router.push("/login");
+        }}
+      />
 
       <div className="md:hidden sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-3 py-2">
         <div className="flex items-center gap-2">
@@ -972,165 +923,52 @@ function ProbabilisticasContent() {
         </div>
       </div>
 
-      {/* Topbar fixo com filtros */}
-      <div className="hidden md:block sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-4 py-3">
+      {/* Barra de filtros + KPIs (desktop) */}
+      <div className="hidden md:block sticky top-0 z-30 bg-[#060B14] border-b border-[#1F2937] px-4 py-3">
         <div className="max-w-[1400px] mx-auto space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={strategy}
-              onChange={(e) => setStrategy(e.target.value)}
-              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-            >
-              {allowedStrategies.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={windowMinutes}
-              onChange={(e) => setWindowMinutes(Number(e.target.value))}
-              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-            >
-              {WINDOWS.map((w) => (
-                <option key={w.value} value={w.value}>
-                  {w.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={mgMode}
-              onChange={(e) => setMgMode(e.target.value)}
-              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-            >
-              {MG_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <label className="flex items-center gap-2">
-              <span className="text-xs text-[#9CA3AF]">Min ciclos</span>
-              <input
-                type="number"
-                min={1}
-                value={minSetups}
-                onChange={(e) => setMinSetups(Number(e.target.value) || 10)}
-                className="w-20 bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-              />
-            </label>
-            <select
-              value={topN}
-              onChange={(e) => setTopN(Number(e.target.value))}
-              className="bg-[#111827] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB]"
-            >
-              {allowedTopNOptions.map((n) => (
-                <option key={n} value={n}>
-                  Top {n}
-                </option>
-              ))}
-            </select>
-            <span className="text-xs text-[#9CA3AF]">
-              Ativos: {topN}/{maxAssets}
-            </span>
-            {user?.plan !== "pro_plus" && (
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(true)}
-                className="text-xs text-[#2563EB] hover:underline"
-              >
-                Faça upgrade
-              </button>
-            )}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeOtc}
-                onChange={(e) => setIncludeOtc(e.target.checked)}
-                className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
-              />
-              <span className="text-xs text-[#9CA3AF]">mostrar OTC</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeOpen}
-                onChange={(e) => setIncludeOpen(e.target.checked)}
-                className="rounded border-[#1F2937] bg-[#111827] text-[#2563EB]"
-              />
-              <span className="text-xs text-[#9CA3AF]">mostrar aberto</span>
-            </label>
-            <div className="ml-auto flex items-center gap-2">
-              {autoPausedByError ? (
-                <span className="px-2 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-200 border border-amber-600/50">
-                  Auto pausado por erro
-                </span>
-              ) : autoRefreshEnabled ? (
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-1.5 rounded-lg text-xs font-medium bg-[#166534]/30 text-[#86EFAC] border border-[#166534]/50">
-                    Auto: ON (60s)
-                  </span>
-                  <span className="tabular-nums text-xs text-[#9CA3AF] min-w-[2.5rem]">
-                    {String(Math.floor(countdownSeconds / 60)).padStart(2, "0")}:
-                    {String(countdownSeconds % 60).padStart(2, "0")}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={stopAutoRefresh}
-                    className="px-2 py-1.5 rounded-lg text-xs font-medium bg-[#1F2937] border border-[#374151] text-[#9CA3AF] hover:bg-[#374151] hover:text-[#E5E7EB]"
-                  >
-                    Parar
-                  </button>
-                </div>
-              ) : (
-                <span className="px-2 py-1.5 rounded-lg text-xs font-medium text-[#6B7280] border border-[#1F2937]">
-                  Auto: OFF
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={handleAtualizarRanking}
-                disabled={loading}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Atualizando…
-                  </>
-                ) : (
-                  "Atualizar ranking"
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {rankingResult != null && rankingResult.debug && (
-              <>
-                <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111827] border border-[#1F2937] text-[#9CA3AF]">
-                  Avaliados: {rankingResult.debug.assets_total ?? 0}
-                </span>
-                <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111827] border border-[#1F2937] text-[#9CA3AF]">
-                  Com ciclos: {rankingResult.debug.assets_with_setups ?? 0}
-                </span>
-                <span
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111827] border border-[#1F2937] text-[#9CA3AF]"
-                  title={fetchPagesUsed != null && fetchPagesUsed > 1 ? "Maximizado via paginação" : undefined}
-                >
-                  Ciclos totais: {cyclesTotal}
-                </span>
-                <span
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111827] border border-[#1F2937] text-[#9CA3AF]"
-                  title={fetchPagesUsed != null && fetchPagesUsed > 1 ? "Maximizado via paginação" : undefined}
-                >
-                  Maior por ativo: {maxCyclesPerAsset}
-                </span>
-                <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111827] border border-[#1F2937] text-[#9CA3AF]">
-                  Ranqueados: {rankingResult.count_ranked ?? 0}
-                </span>
-              </>
-            )}
-          </div>
+          <FilterBar
+            strategy={strategy}
+            onStrategyChange={setStrategy}
+            windowMinutes={windowMinutes}
+            onWindowMinutesChange={setWindowMinutes}
+            mgMode={mgMode}
+            onMgModeChange={setMgMode}
+            minSetups={minSetups}
+            onMinSetupsChange={setMinSetups}
+            topN={topN}
+            onTopNChange={setTopN}
+            includeOtc={includeOtc}
+            onIncludeOtcChange={setIncludeOtc}
+            includeOpen={includeOpen}
+            onIncludeOpenChange={setIncludeOpen}
+            strategies={allowedStrategies}
+            windows={WINDOWS}
+            mgOptions={MG_OPTIONS}
+            topNOptions={allowedTopNOptions}
+            maxAssets={maxAssets}
+            loading={loading}
+            onAtualizar={handleAtualizarRanking}
+            onLimparFiltros={clearFilters}
+            autoRefreshEnabled={autoRefreshEnabled}
+            onAutoRefreshChange={setAutoRefreshEnabled}
+            countdownSeconds={countdownSeconds}
+            onStopAuto={stopAutoRefresh}
+            autoPausedByError={autoPausedByError}
+            ativosLabel={`Ativos: ${topN}/${maxAssets}`}
+            lastUpdatedLabel={lastUpdatedLabel}
+            showUpgrade={user?.plan !== "pro_plus"}
+            onUpgradeClick={() => setShowUpgradeModal(true)}
+          />
+          {rankingResult?.debug && (
+            <KpiRow
+              avaliados={rankingResult.debug.assets_total ?? 0}
+              comCiclos={rankingResult.debug.assets_with_setups ?? 0}
+              ciclosTotais={cyclesTotal}
+              ranqueados={rankingResult.count_ranked ?? 0}
+              maxPorAtivo={maxCyclesPerAsset}
+              fetchPagesUsed={fetchPagesUsed}
+            />
+          )}
         </div>
       </div>
 
@@ -1223,6 +1061,13 @@ function ProbabilisticasContent() {
               </label>
               <button
                 type="button"
+                onClick={clearFilters}
+                className="w-full px-4 py-2 rounded-lg text-xs font-medium border border-[#334155] text-[#94A3B8] hover:bg-[#1E293B] transition-colors"
+              >
+                Limpar filtros
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   setMobileFiltersOpen(false);
                   handleAtualizarRanking();
@@ -1238,55 +1083,17 @@ function ProbabilisticasContent() {
       )}
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 py-4 pb-6 sm:px-4 sm:py-6">
-        <section className="mb-4 bg-[#111827] border border-[#1F2937] rounded-xl p-3 sm:p-4">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <h3 className="text-sm font-semibold text-[#E5E7EB]">Código promocional</h3>
-            <button
-              type="button"
-              className="sm:hidden px-2 py-1 rounded-md text-[11px] border border-[#334155] text-[#9CA3AF]"
-              onClick={() => setPromoExpanded((v) => !v)}
-            >
-              {promoExpanded ? "Ocultar" : "Mostrar"}
-            </button>
-          </div>
-          <p className="text-xs text-[#9CA3AF] mb-2">
-            Status atual: {currentPlanLabel}
-            {planExpiryText}
-            {promoExpiryText ? ` · Promo: ${promoExpiryText}` : ""}
-          </p>
-          {promoExpanded && (
-            <>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder="Digite seu código"
-                  className="flex-1 bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleRedeemPromo}
-                  disabled={promoLoading}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white"
-                >
-                  {promoLoading ? "Ativando..." : "Ativar"}
-                </button>
-              </div>
-              {promoFeedback && (
-                <p
-                  className={`mt-3 text-xs px-3 py-2 rounded-lg border ${
-                    promoFeedback.type === "success"
-                      ? "bg-emerald-900/20 border-emerald-700/50 text-emerald-300"
-                      : "bg-red-900/20 border-red-700/50 text-red-300"
-                  }`}
-                >
-                  {promoFeedback.text}
-                </p>
-              )}
-            </>
-          )}
-        </section>
+        <PromoCodeCard
+          planLabel={currentPlanLabel}
+          planExpiryText={planExpiryText ?? ""}
+          promoExpiryText={promoExpiryText}
+          promoCode={promoCode}
+          onPromoCodeChange={setPromoCode}
+          onRedeem={handleRedeemPromo}
+          promoLoading={promoLoading}
+          promoFeedback={promoFeedback}
+          defaultExpanded={promoExpanded}
+        />
 
         {removedStrategyToast && (
           <div className="mb-4 bg-amber-900/30 border border-amber-500 rounded-xl px-4 py-2 text-amber-200 text-sm">
@@ -1434,46 +1241,56 @@ function ProbabilisticasContent() {
         {rankingResult && !loading && !hasNoResults && (
           <>
             {mostAssertive && (
-              <p className="mb-4 text-sm text-[#E5E7EB]">
-                <span className="text-[#9CA3AF]">Mais assertivo agora: </span>
-                <span className="font-semibold text-[#22C55E]">
-                  {symbolToLabel(mostAssertive.asset)} ({(100 * (mostAssertive.win_total_rate ?? mostAssertive.win_rate ?? 0)).toFixed(1)}% • {mostAssertive.cycles ?? mostAssertive.total ?? 0} ciclos • Score {(mostAssertive.score ?? 0).toFixed(2)})
-                </span>
-              </p>
-            )}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-            {topList.map((row) => (
-              <RankingCard
-                key={row.asset}
-                row={row}
+              <BestNowHighlight
+                asset={mostAssertive}
                 strategyName={STRATEGIES.find((s) => s.value === strategy)?.label ?? "MHI"}
-                onVerDetalhes={() => setDetailsAsset(row)}
-                onVerCiclos={() => {
-                  const payload = {
-                    symbol: row.asset,
-                    strategy,
-                    strategyName: STRATEGIES.find((s) => s.value === strategy)?.label ?? "MHI",
-                    timeframe: WINDOWS.find((w) => w.value === windowMinutes)?.label ?? "2h",
-                    mg: mgMode,
-                    window: windowMinutes,
-                    minCycles: minSetups,
-                    showOtc: includeOtc,
-                    showOpen: includeOpen,
-                  };
-                  if (process.env.NODE_ENV !== "production") {
-                    // eslint-disable-next-line no-console
-                    console.log("[Ver ciclos] payload enviado para a API:", payload);
-                  }
+                onVerCiclos={() =>
                   setCyclesModal({
-                    symbol: row.asset,
+                    symbol: mostAssertive.asset,
                     strategyId: strategy,
                     strategyName: STRATEGIES.find((s) => s.value === strategy)?.label ?? "MHI",
                     windowMinutes: windowMinutes,
                     mg1: mgMode === "mg1",
-                  });
-                }}
+                  })
+                }
+                onVerDetalhes={() => setDetailsAsset(mostAssertive)}
               />
-            ))}
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-xs text-[#64748B]">Ordenar por:</span>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as "assertividade" | "score" | "ciclos")}
+                className="bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-1.5 text-sm text-[#F1F5F9] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/20 focus:outline-none"
+                aria-label="Ordenar cards por"
+              >
+                <option value="assertividade">Assertividade</option>
+                <option value="score">Score</option>
+                <option value="ciclos">Ciclos</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+              {sortedTopList.map((row) => (
+                <PairCard
+                  key={row.asset}
+                  row={row}
+                  strategyName={STRATEGIES.find((s) => s.value === strategy)?.label ?? "MHI"}
+                  onVerDetalhes={() => setDetailsAsset(row)}
+                  onVerCiclos={() => {
+                    if (process.env.NODE_ENV !== "production") {
+                      // eslint-disable-next-line no-console
+                      console.log("[Ver ciclos] payload:", { symbol: row.asset, strategy, windowMinutes, mg1: mgMode === "mg1" });
+                    }
+                    setCyclesModal({
+                      symbol: row.asset,
+                      strategyId: strategy,
+                      strategyName: STRATEGIES.find((s) => s.value === strategy)?.label ?? "MHI",
+                      windowMinutes: windowMinutes,
+                      mg1: mgMode === "mg1",
+                    });
+                  }}
+                />
+              ))}
             </div>
           </>
         )}
