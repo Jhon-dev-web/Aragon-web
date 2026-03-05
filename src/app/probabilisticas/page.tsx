@@ -840,7 +840,7 @@ function ProbabilisticasContent() {
                 disabled={checkoutPlanLoading !== null}
                 className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-center bg-gradient-to-r from-[#4F46E5] to-[#2563EB] hover:brightness-110 text-white disabled:opacity-60"
               >
-                {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$49,90/mês"}
+                {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$1,00/mês"}
               </button>
               <button
                 type="button"
@@ -848,7 +848,7 @@ function ProbabilisticasContent() {
                 disabled={checkoutPlanLoading !== null}
                 className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white disabled:opacity-60"
               >
-                {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Pro+ Vitalício R$249,90"}
+                {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Pro+ Vitalício R$1,00"}
               </button>
               <button
                 type="button"
