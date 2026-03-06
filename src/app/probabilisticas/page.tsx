@@ -545,6 +545,9 @@ function ProbabilisticasContent() {
   const rankingControllerRef = useRef<AbortController | null>(null);
   const inFlightRef = useRef(false);
   const consecutiveErrorsRef = useRef(0);
+  const rankingRequestIdRef = useRef(0);
+  const currentRankingRequestIdRef = useRef(0);
+  const userCancelledRequestIdRef = useRef<number | null>(null);
 
   // Carregar estratégia de query ou localStorage; fallback se for estratégia removida
   useEffect(() => {
@@ -569,7 +572,13 @@ function ProbabilisticasContent() {
   }, [strategy]);
 
   const fetchRanking = useCallback(async () => {
-    rankingControllerRef.current?.abort();
+    const myId = rankingRequestIdRef.current + 1;
+    rankingRequestIdRef.current = myId;
+    if (rankingControllerRef.current) {
+      userCancelledRequestIdRef.current = currentRankingRequestIdRef.current;
+      rankingControllerRef.current.abort();
+    }
+    currentRankingRequestIdRef.current = myId;
     rankingControllerRef.current = new AbortController();
     inFlightRef.current = true;
     setLoading(true);
@@ -592,6 +601,10 @@ function ProbabilisticasContent() {
       setLastUpdatedAt(Date.now());
       consecutiveErrorsRef.current = 0;
     } catch (e) {
+      if (e instanceof Error && e.name === "AbortError" && userCancelledRequestIdRef.current === myId) {
+        userCancelledRequestIdRef.current = null;
+        return;
+      }
       const msg = e instanceof Error ? e.message : "Erro ao atualizar ranking";
       setError(msg);
       if (msg.includes("HTTP 403")) setShowUpgradeModal(true);
@@ -601,8 +614,10 @@ function ProbabilisticasContent() {
         setAutoPausedByError(true);
       }
     } finally {
-      setLoading(false);
-      inFlightRef.current = false;
+      if (currentRankingRequestIdRef.current === myId) {
+        setLoading(false);
+        inFlightRef.current = false;
+      }
     }
   }, [strategy, windowMinutes, minSetups, topN, includeOtc, includeOpen, mgMode, maxAssets]);
 
