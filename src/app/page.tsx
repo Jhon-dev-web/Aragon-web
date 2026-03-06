@@ -314,22 +314,36 @@ export default function HomePage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex-1 rounded-lg bg-[#0F172A] border border-[#1E293B] p-4">
-                  <div className="space-y-2">
-                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
-                      <div className="h-full w-[78%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                <div className="flex-1 min-w-0">
+                  <div className="rounded-xl border border-[#1F2937] bg-[#111827] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="font-semibold text-sm text-[#E5E7EB]">USD/JPY</span>
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-[#374151] text-[#94A3B8]">OTC</span>
                     </div>
-                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
-                      <div className="h-full w-[65%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                    <p className="text-[11px] text-[#9CA3AF] mb-1.5">MILHÃO MINORIA</p>
+                    <div className="text-xl font-bold text-[#22C55E] mb-1">90.9%</div>
+                    <p className="text-[10px] text-[#9CA3AF] mb-2">22 ciclos — 20 win / 2 hit</p>
+                    <div className="flex flex-wrap gap-1.5 mb-3 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded bg-[#1E3A5F]/60 text-[#93C5FD]">P 17</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[#2E1F4F]/60 text-[#A78BFA]">G1 3</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[#3F1F1F]/60 text-[#F87171]">H 2</span>
                     </div>
-                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
-                      <div className="h-full w-[59%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
+                    <div className="flex gap-2">
+                      <Link
+                        href={isLoggedIn ? "/probabilisticas" : "/login"}
+                        className="flex-1 py-2 rounded-lg text-[11px] font-medium text-center bg-[#1E293B] border border-[#334155] text-[#94A3B8] hover:bg-[#334155] hover:text-[#F1F5F9] transition-colors"
+                      >
+                        Ver ciclos
+                      </Link>
+                      <Link
+                        href={isLoggedIn ? "/probabilisticas" : "/login"}
+                        className="flex-1 py-2 rounded-lg text-[11px] font-medium text-center bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
+                      >
+                        Ver detalhes
+                      </Link>
                     </div>
-                    <div className="h-2.5 rounded-full bg-[#1E293B] overflow-hidden">
-                      <div className="h-full w-[52%] bg-gradient-to-r from-[#4F46E5] to-[#2563EB]" />
-                    </div>
+                    <p className="text-[10px] text-[#6B7280] mt-3 text-center">Exemplo do dashboard (MILHÃO MINORIA)</p>
                   </div>
-                  <p className="text-xs text-[#94A3B8] mt-4">Espaço reservado para screenshot real do sistema</p>
                 </div>
               </div>
             </div>
