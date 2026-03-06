@@ -149,10 +149,11 @@ export default function HomePage() {
       setCheckoutPlanLoading(pendingPlan);
       if (typeof window !== "undefined") window.localStorage.setItem(CPF_STORAGE_KEY, digits);
       const checkout = await billingCheckout(pendingPlan, digits);
-      if (!checkout.init_point) throw new Error("Checkout sem URL de redirecionamento");
+      const url = checkout.checkout_url ?? checkout.init_point;
+      if (!url) throw new Error("Checkout sem URL de redirecionamento");
       setShowCpfModal(false);
       setPendingPlan(null);
-      window.location.href = checkout.init_point;
+      window.location.href = url;
     } catch (err) {
       setToastMessage(err instanceof Error ? err.message : "Falha ao iniciar pagamento.");
       setShowToast(true);

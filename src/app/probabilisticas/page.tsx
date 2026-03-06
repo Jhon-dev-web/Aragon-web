@@ -45,6 +45,7 @@ const WINDOWS = [
 const STRATEGIES = [
   { value: "mhi", label: "MHI" },
   { value: "milhao", label: "MILHÃO MINORIA" },
+  { value: "milhonaria", label: "MILHONARIA" },
   { value: "3mosq", label: "3 Mosqueteiros (Repetição)" },
   { value: "padrao23", label: "Padrão 23" },
 ];
@@ -738,8 +739,9 @@ function ProbabilisticasContent() {
       setCheckoutPlanLoading(plan);
       const cpfDigits = onlyDigits(upgradeCpf);
       const checkout = await billingCheckout(plan, cpfDigits.length === 11 ? cpfDigits : undefined);
-      if (!checkout.init_point) throw new Error("Checkout sem URL");
-      window.location.href = checkout.init_point;
+      const url = checkout.checkout_url ?? checkout.init_point;
+      if (!url) throw new Error("Checkout sem URL");
+      window.location.href = url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao iniciar checkout");
     } finally {

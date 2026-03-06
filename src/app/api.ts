@@ -114,7 +114,12 @@ function safeParseJson<T>(text: string, msg = "Resposta inválida do servidor. T
 }
 
 export type BillingPlan = "advanced" | "pro_plus";
-export type BillingCheckoutResponse = { init_point: string; preference_id?: string };
+export type BillingCheckoutResponse = {
+  checkout_url?: string;
+  payment_id?: string;
+  init_point?: string;
+  preference_id?: string;
+};
 
 export async function billingCheckout(plan: BillingPlan, cpf?: string): Promise<BillingCheckoutResponse> {
   const r = await fetch(`${API_BASE}/billing/checkout`, {
@@ -134,7 +139,9 @@ export async function billingCheckout(plan: BillingPlan, cpf?: string): Promise<
     }
     throw new Error(detail || "Falha ao iniciar checkout");
   }
-  return safeParseJson<BillingCheckoutResponse>(text);
+  const data = safeParseJson<BillingCheckoutResponse>(text);
+  if (!data.checkout_url && !data.init_point) throw new Error("Checkout sem URL de redirecionamento");
+  return data;
 }
 
 export type PromoRedeemResponse = { ok: boolean; source: string; expires_at: string };
@@ -574,7 +581,7 @@ export async function fetchCatalogRanking(
       try {
         const j = JSON.parse(text);
         if (j.detail === "strategy_not_supported")
-          throw new Error("Estratégia não suportada. Use MHI (mhi) ou MILHÃO MINORIA (milhao).");
+          throw new Error("Estratégia não suportada. Use MHI (mhi), MILHÃO MINORIA (milhao) ou MILHONARIA (milhonaria).");
       } catch (e) {
         if (e instanceof Error) throw e;
       }
@@ -613,7 +620,7 @@ export type CyclesResponse = {
 const cyclesCache = new Map<string, { data: CyclesResponse; ts: number }>();
 const CACHE_TTL_MS = 60_000;
 
-/** Backend espera: mhi | milhao | padrao23 | 3mosq (lowercase). */
+/** Backend espera: mhi | milhao | milhonaria | padrao23 | 3mosq (lowercase). */
 export function mapStrategyUiToApi(ui: string): string {
   const s = (ui || "mhi").trim().toLowerCase();
   if (s === "mosqueteiros_rep" || s === "3 mosqueteiros") return "3mosq";
