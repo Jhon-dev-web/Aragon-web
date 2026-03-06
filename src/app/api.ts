@@ -555,6 +555,11 @@ export async function fetchCatalogRanking(
     }
     signal.addEventListener("abort", () => controller.abort());
   }
+  const token = getAuthToken();
+  if (!token || !token.trim()) {
+    throw new Error("Faça login para atualizar o ranking. Sessão ausente.");
+  }
+
   let r: Response;
   try {
     r = await fetch(`${API_BASE}/catalog`, {
@@ -577,6 +582,9 @@ export async function fetchCatalogRanking(
   if (!r.ok) {
     const friendly = friendlyMessageIfHtml(r.status, text);
     if (friendly) throw new Error(friendly);
+    if (r.status === 401) {
+      throw new Error("Sessão expirada ou inválida. Faça login novamente para atualizar o ranking.");
+    }
     if (r.status === 400) {
       try {
         const j = JSON.parse(text);
