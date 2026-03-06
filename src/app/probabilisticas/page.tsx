@@ -1111,7 +1111,12 @@ function ProbabilisticasContent() {
             <span>Falha ao atualizar: {error}</span>
             <button
               type="button"
-              onClick={() => fetchRanking()}
+              onClick={() => {
+                setError(null);
+                setAutoPausedByError(false);
+                setAutoRefreshEnabled(true);
+                handleAtualizarRanking();
+              }}
               disabled={loading}
               className="shrink-0 px-4 py-2 rounded-lg text-sm font-medium bg-red-600/80 hover:bg-red-600 text-white disabled:opacity-50"
             >

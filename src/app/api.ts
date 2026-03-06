@@ -511,9 +511,14 @@ export type CatalogResponse = {
   };
 };
 
-const CATALOG_FETCH_TIMEOUT_MS = 60_000;
+/** Timeout do catalog: janelas maiores (4h, 24h) precisam de mais tempo no backend. */
+function getCatalogTimeoutMs(minutes: number): number {
+  if (minutes >= 1440) return 240_000; // 24h: 4 min
+  if (minutes >= 240) return 150_000;  // 4h: 2,5 min
+  return 90_000;                        // 2h: 1,5 min
+}
 
-/** POST /catalog — ranking automático. Timeout 1 min; suporta AbortSignal externo (cancelar anterior). */
+/** POST /catalog — ranking automático. Timeout conforme janela (2h/4h/24h); suporta AbortSignal externo. */
 export async function fetchCatalogRanking(
   params: {
     minutes: number;
@@ -546,8 +551,9 @@ export async function fetchCatalogRanking(
     include_open,
     mg1,
   };
+  const timeoutMs = getCatalogTimeoutMs(minutes);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CATALOG_FETCH_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   if (signal) {
     if (signal.aborted) {
       clearTimeout(timeoutId);

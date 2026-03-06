@@ -36,6 +36,8 @@ export default function LoginPage() {
     }
   }, [router]);
 
+  const LOGIN_TIMEOUT_MS = 28_000;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -47,12 +49,18 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      if (mode === "login") {
-        await authLogin(em, pw);
-      } else {
-        await authRegister(em, pw);
-      }
-      await fetchUser();
+      const loginTask = (async () => {
+        if (mode === "login") {
+          await authLogin(em, pw);
+        } else {
+          await authRegister(em, pw);
+        }
+        await fetchUser();
+      })();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("Tempo esgotado. Verifique sua conexão e tente novamente.")), LOGIN_TIMEOUT_MS);
+      });
+      await Promise.race([loginTask, timeoutPromise]);
       router.replace("/probabilisticas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao autenticar. Verifique email e senha.");
