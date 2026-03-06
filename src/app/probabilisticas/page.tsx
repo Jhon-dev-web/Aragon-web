@@ -712,6 +712,9 @@ function ProbabilisticasContent() {
         return min === 1 ? "1 min" : `${min} min`;
       })()
     : null;
+  const lastUpdatedTime = lastUpdatedAt
+    ? new Date(lastUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : null;
   const maxCyclesPerAsset = rankingResult?.debug?.max_setups_per_asset ?? 0;
   const fetchPagesUsed = rankingResult?.debug?.fetch_pages_used;
   const currentPlanLabel =
@@ -956,6 +959,7 @@ function ProbabilisticasContent() {
             autoPausedByError={autoPausedByError}
             ativosLabel={`Ativos: ${topN}/${maxAssets}`}
             lastUpdatedLabel={lastUpdatedLabel}
+            lastUpdatedTime={lastUpdatedTime}
             showUpgrade={user?.plan !== "pro_plus"}
             onUpgradeClick={() => setShowUpgradeModal(true)}
           />
@@ -1270,7 +1274,7 @@ function ProbabilisticasContent() {
               </select>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-              {sortedTopList.map((row) => (
+              {sortedTopList.map((row, index) => (
                 <PairCard
                   key={row.asset}
                   row={row}
@@ -1289,6 +1293,7 @@ function ProbabilisticasContent() {
                       mg1: mgMode === "mg1",
                     });
                   }}
+                  isFirst={index === 0}
                 />
               ))}
             </div>

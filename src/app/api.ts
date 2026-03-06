@@ -446,6 +446,8 @@ export type CatalogByAsset = {
    last_hit_ts?: number | null;
    hit_streak_max?: number;
    hit_streak_current?: number;
+   /** Payout médio (%), opcional — exibido no card quando enviado pelo backend */
+   payout_avg?: number | null;
 };
 
 export type CatalogSummary = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { symbolToLabel } from "../utils";
+import { symbolToLabel, getAssertivenessColor } from "../utils";
 import type { CatalogByAsset } from "../../api";
 import { tw } from "../design-tokens";
 
@@ -38,7 +38,9 @@ export function BestNowHighlight({
   onVerDetalhes,
 }: BestNowHighlightProps) {
   const winRate = asset.win_rate ?? asset.win_total_rate ?? 0;
-  const pct = (100 * winRate).toFixed(1);
+  const pctNum = 100 * winRate;
+  const pct = pctNum.toFixed(1);
+  const assertivenessColorClass = getAssertivenessColor(pctNum);
   const cycles = asset.cycles ?? asset.total ?? 0;
   const score = (asset.score ?? 0).toFixed(2);
   const wins = asset.wins ?? asset.win_no_mg + asset.win_with_mg;
@@ -67,7 +69,7 @@ export function BestNowHighlight({
           </div>
           <p className={`text-xs ${tw.textMuted} mb-2`}>{strategyName}</p>
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="font-semibold text-emerald-400">{pct}% assertividade</span>
+            <span className={`font-semibold ${assertivenessColorClass}`}>{pct}% assertividade</span>
             <span className={tw.textSecondary}>{cycles} ciclos</span>
             <span className={tw.textSecondary}>Score {score}</span>
             <span className={tw.textMuted}>

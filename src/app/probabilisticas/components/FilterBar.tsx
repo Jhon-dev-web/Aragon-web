@@ -36,6 +36,8 @@ export type FilterBarProps = {
   autoPausedByError: boolean;
   ativosLabel: string;
   lastUpdatedLabel: string | null;
+  /** Horário da última atualização (ex: "14:32") para exibir junto ao label */
+  lastUpdatedTime?: string | null;
   showUpgrade?: boolean;
   onUpgradeClick?: () => void;
   compact?: boolean;
@@ -73,6 +75,7 @@ export function FilterBar({
   autoPausedByError,
   ativosLabel,
   lastUpdatedLabel,
+  lastUpdatedTime,
   showUpgrade,
   onUpgradeClick,
   compact = false,
@@ -236,9 +239,11 @@ export function FilterBar({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {lastUpdatedLabel && (
+        {(lastUpdatedLabel || lastUpdatedTime) && (
           <span className={`text-[11px] ${tw.textMuted}`}>
-            Atualizado há: {lastUpdatedLabel}
+            {lastUpdatedLabel && `Atualizado há: ${lastUpdatedLabel}`}
+            {lastUpdatedLabel && lastUpdatedTime && " · "}
+            {lastUpdatedTime && `Última atualização: ${lastUpdatedTime}`}
           </span>
         )}
       </div>

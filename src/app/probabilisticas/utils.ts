@@ -18,3 +18,14 @@ export function assertivityColor(pct: number): { bg: string; text: string; label
   if (pct >= 50) return { bg: "bg-amber-900/40", text: "text-amber-300", label: "Média" };
   return { bg: "bg-red-900/40", text: "text-red-300", label: "Baixa" };
 }
+
+/**
+ * Cor dinâmica do número de assertividade (UI dashboard).
+ * >= 80: text-green-400 | >= 70: text-green-300 | >= 60: text-yellow-400 | < 60: text-red-400
+ */
+export function getAssertivenessColor(value: number): string {
+  if (value >= 80) return "text-green-400";
+  if (value >= 70) return "text-green-300";
+  if (value >= 60) return "text-yellow-400";
+  return "text-red-400";
+}
