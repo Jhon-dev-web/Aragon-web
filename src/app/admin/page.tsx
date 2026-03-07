@@ -255,6 +255,7 @@ export default function AdminPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-left text-[#9CA3AF] border-b border-[#1F2937]">
+                  <th className="py-2 pr-3">Nome</th>
                   <th className="py-2 pr-3">Email</th>
                   <th className="py-2 pr-3">Plano salvo</th>
                   <th className="py-2 pr-3">Acesso efetivo</th>
@@ -266,6 +267,7 @@ export default function AdminPage() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id} className="border-b border-[#1F2937]/60">
+                    <td className="py-2 pr-3">{u.name || "—"}</td>
                     <td className="py-2 pr-3">
                       {u.email}
                       {u.is_admin_override ? <span className="ml-2 px-1.5 py-0.5 rounded bg-indigo-900/40 text-indigo-300">admin unlock</span> : null}

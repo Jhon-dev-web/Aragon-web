@@ -4,22 +4,16 @@ import Link from "next/link";
 import { tw } from "../design-tokens";
 
 export type HeaderBarProps = {
-  userEmail: string;
+  /** Nome do usuário a exibir no header (nome cadastrado; fallback para email se não houver nome). */
+  displayName: string;
   planLabel: string;
   planExpiryText: string;
   brokerStatus: string;
   onLogout: () => void;
 };
 
-function maskEmail(email: string): string {
-  if (!email || !email.includes("@")) return email || "—";
-  const [local, domain] = email.split("@");
-  if (local.length <= 2) return "***@" + (domain?.slice(0, 2) ?? "") + "***";
-  return local.slice(0, 2) + "***@" + (domain?.slice(0, 2) ?? "") + "***";
-}
-
 export function HeaderBar({
-  userEmail,
+  displayName,
   planLabel,
   planExpiryText,
   brokerStatus,
@@ -58,7 +52,7 @@ export function HeaderBar({
           Admin
         </Link>
         <span className={`text-xs ${tw.textMuted} hidden sm:inline`} aria-hidden>
-          Logado: {maskEmail(userEmail)}
+          Logado: {displayName || "Usuário"}
         </span>
         <span className={`text-xs ${tw.textMuted} hidden md:inline`} aria-hidden>
           Plano: {planLabel}{planExpiryText}
@@ -76,11 +70,11 @@ export function HeaderBar({
             className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold text-white"
             aria-hidden
           >
-            {(userEmail || "U")[0]?.toUpperCase()}
+            {(displayName || "U")[0]?.toUpperCase()}
           </div>
           <div className="flex flex-col items-start hidden sm:block">
             <span className={`text-xs ${tw.textPrimary} truncate max-w-[220px]`}>
-              {userEmail || "Usuário"}
+              {displayName || "Usuário"}
             </span>
             <span className={`text-[10px] ${tw.textMuted}`}>{brokerStatus}</span>
           </div>

@@ -13,19 +13,22 @@ import {
   clearUserProfile,
   clearPlan,
   setStoredUserEmail,
+  setStoredUserName,
   setStoredPlan as authStoreSetStoredPlan,
   getStoredPlan as authStoreGetStoredPlan,
   getStoredUserEmail,
+  getStoredUserName,
 } from "./util/AuthStore";
 
 let inMemoryToken: string | null = null;
 
-export function setAuthToken(token: string | null, email?: string, plan?: string) {
+export function setAuthToken(token: string | null, email?: string, name?: string, plan?: string) {
   inMemoryToken = token;
   if (typeof window !== "undefined") {
     authStoreSetToken(token);
     if (token) {
       if (email) setStoredUserEmail(email);
+      if (name !== undefined) setStoredUserName(name);
       if (plan !== undefined) authStoreSetStoredPlan(plan);
     } else {
       clearUserProfile();
@@ -36,6 +39,7 @@ export function setAuthToken(token: string | null, email?: string, plan?: string
 
 export type MeResponse = {
   id: string;
+  name?: string | null;
   email: string;
   plan: string;
   plan_started_at?: string | null;
@@ -63,6 +67,7 @@ export async function fetchMe(): Promise<MeResponse | null> {
     const data = JSON.parse(text);
     return {
       id: String(data.id ?? ""),
+      name: data.name == null ? null : String(data.name),
       email: String(data.email ?? ""),
       plan: String(data.plan ?? "free"),
       plan_started_at:
@@ -93,6 +98,10 @@ export function getCurrentUserEmail(): string | null {
   return getStoredUserEmail();
 }
 
+export function getCurrentUserName(): string | null {
+  return getStoredUserName();
+}
+
 function authHeaders(extra?: HeadersInit): HeadersInit {
   const token = getAuthToken();
   const base: HeadersInit = extra ? { ...extra } : {};
@@ -114,6 +123,7 @@ function safeParseJson<T>(text: string, msg = "Resposta inválida do servidor. T
 }
 
 export type BillingPlan = "advanced" | "pro_plus";
+export type PaymentMethod = "PIX" | "CREDIT_CARD" | "UNDEFINED";
 export type BillingCheckoutResponse = {
   checkout_url?: string;
   payment_id?: string;
@@ -121,11 +131,20 @@ export type BillingCheckoutResponse = {
   preference_id?: string;
 };
 
-export async function billingCheckout(plan: BillingPlan, cpf?: string): Promise<BillingCheckoutResponse> {
+export async function billingCheckout(
+  plan: BillingPlan,
+  cpf?: string,
+  paymentMethod: PaymentMethod = "UNDEFINED",
+): Promise<BillingCheckoutResponse> {
+  const body: { plan: BillingPlan; cpf?: string; payment_method: PaymentMethod } = {
+    plan,
+    payment_method: paymentMethod,
+  };
+  if (cpf) body.cpf = cpf;
   const r = await fetch(`${API_BASE}/billing/checkout`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify(cpf ? { plan, cpf } : { plan }),
+    body: JSON.stringify(body),
   });
   const text = await r.text();
   if (!r.ok) {
@@ -179,6 +198,7 @@ export type AdminPromoCode = {
 
 export type AdminUserItem = {
   id: string;
+  name?: string | null;
   email: string;
   created_at?: string | null;
   saved_plan: string;
@@ -960,11 +980,11 @@ export async function authLogin(email: string, password: string): Promise<AuthTo
   return data;
 }
 
-export async function authRegister(email: string, password: string): Promise<AuthTokenResponse> {
+export async function authRegister(name: string, email: string, password: string): Promise<AuthTokenResponse> {
   const r = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ name: (name || "").trim(), email, password }),
   });
   const text = await r.text();
   if (!r.ok) {
@@ -989,7 +1009,7 @@ export async function authRegister(email: string, password: string): Promise<Aut
   if (!data?.access_token) {
     throw new Error("Resposta inválida do servidor. Tente novamente.");
   }
-  setAuthToken(data.access_token, email);
+  setAuthToken(data.access_token, email, (name || "").trim());
   return data;
 }
 

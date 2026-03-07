@@ -15,11 +15,13 @@ import {
   getCyclesRequestUrl,
   getAuthToken,
   getCurrentUserEmail,
+  getCurrentUserName,
   redeemPromoCode,
   type CatalogResponse,
   type CatalogByAsset,
   type CyclesResponse,
   type CycleItem,
+  type PaymentMethod,
 } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useBroker } from "../context/BrokerContext";
@@ -469,6 +471,7 @@ function ProbabilisticasContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeCpf, setUpgradeCpf] = useState("");
+  const [upgradePaymentMethod, setUpgradePaymentMethod] = useState<PaymentMethod>("PIX");
   const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
@@ -734,7 +737,7 @@ function ProbabilisticasContent() {
   const maxCyclesPerAsset = rankingResult?.debug?.max_setups_per_asset ?? 0;
   const fetchPagesUsed = rankingResult?.debug?.fetch_pages_used;
   const currentPlanLabel =
-    user?.plan === "pro_plus" ? "PRO+" : user?.plan === "advanced" ? "Avançado" : "Grátis";
+    user?.plan === "pro_plus" ? "PRO+ Vitalício" : user?.plan === "advanced" ? "Avançado" : "Grátis";
   const planExpiryText = user?.plan === "advanced" ? ` · expira em ${formatExpiry(user?.plan_expires_at)}` : "";
   const promoExpiryText =
     user?.entitlement_expires_at && user?.entitlement_source
@@ -753,7 +756,11 @@ function ProbabilisticasContent() {
     try {
       setCheckoutPlanLoading(plan);
       const cpfDigits = onlyDigits(upgradeCpf);
-      const checkout = await billingCheckout(plan, cpfDigits.length === 11 ? cpfDigits : undefined);
+      const checkout = await billingCheckout(
+        plan,
+        cpfDigits.length === 11 ? cpfDigits : undefined,
+        upgradePaymentMethod,
+      );
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL");
       window.location.href = url;
@@ -762,7 +769,7 @@ function ProbabilisticasContent() {
     } finally {
       setCheckoutPlanLoading(null);
     }
-  }, [upgradeCpf]);
+  }, [upgradeCpf, upgradePaymentMethod]);
 
   const handleRedeemPromo = useCallback(async () => {
     const code = promoCode.trim();
@@ -847,12 +854,34 @@ function ProbabilisticasContent() {
           <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 w-full max-w-md shadow-xl">
             <h2 className="text-lg font-semibold text-[#E5E7EB] mb-2">Faça upgrade</h2>
             <p className="text-sm text-[#9CA3AF] mb-2">
-              Seu plano atual limita estratégias e ativos. Assine Avançado ou PRO+ para liberar mais.
+              Assine Avançado ou PRO+ Vitalício para liberar todas as estratégias e ativos.
             </p>
-            <p className="text-xs text-[#6B7280] mb-2">Pagamento via PIX ou cartão (Mercado Pago)</p>
-            <p className="text-xs text-[#6B7280] mb-3">
-              CPF (opcional): evita campos em branco na página do Mercado Pago e ajuda o botão &quot;Pagar&quot; a habilitar.
-            </p>
+            <p className="text-xs text-[#6B7280] mb-2">Método de pagamento</p>
+            <div className="flex gap-3 mb-3">
+              <button
+                type="button"
+                onClick={() => setUpgradePaymentMethod("PIX")}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  upgradePaymentMethod === "PIX"
+                    ? "bg-[#2563EB]/20 border-[#2563EB] text-[#93C5FD]"
+                    : "bg-[#0B1220] border-[#1F2937] text-[#9CA3AF] hover:border-[#374151]"
+                }`}
+              >
+                PIX
+              </button>
+              <button
+                type="button"
+                onClick={() => setUpgradePaymentMethod("CREDIT_CARD")}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  upgradePaymentMethod === "CREDIT_CARD"
+                    ? "bg-[#2563EB]/20 border-[#2563EB] text-[#93C5FD]"
+                    : "bg-[#0B1220] border-[#1F2937] text-[#9CA3AF] hover:border-[#374151]"
+                }`}
+              >
+                Cartão
+              </button>
+            </div>
+            <p className="text-xs text-[#6B7280] mb-2">CPF (opcional)</p>
             <input
               type="text"
               value={formatCpfDisplay(upgradeCpf)}
@@ -867,7 +896,7 @@ function ProbabilisticasContent() {
                 disabled={checkoutPlanLoading !== null}
                 className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-center bg-gradient-to-r from-[#4F46E5] to-[#2563EB] hover:brightness-110 text-white disabled:opacity-60"
               >
-                {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$1,00/mês"}
+                {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$ 47,90/mês"}
               </button>
               <button
                 type="button"
@@ -875,7 +904,7 @@ function ProbabilisticasContent() {
                 disabled={checkoutPlanLoading !== null}
                 className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white disabled:opacity-60"
               >
-                {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Pro+ Vitalício R$1,00"}
+                {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Pro+ Vitalício R$ 199"}
               </button>
               <button
                 type="button"
@@ -890,7 +919,7 @@ function ProbabilisticasContent() {
       )}
 
       <HeaderBar
-        userEmail={user?.email ?? getCurrentUserEmail() ?? ""}
+        displayName={user?.name ?? user?.email ?? getCurrentUserName() ?? getCurrentUserEmail() ?? ""}
         planLabel={currentPlanLabel}
         planExpiryText={planExpiryText}
         brokerStatus={

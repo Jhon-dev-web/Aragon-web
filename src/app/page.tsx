@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { billingCheckout, getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
+import { billingCheckout, getAuthToken, fetchPublicSummary, type PublicSummary, type PaymentMethod } from "./api";
 import { useAuth } from "./context/AuthContext";
 
 function ToastInfo({ message, onDismiss }: { message: string; onDismiss: () => void }) {
@@ -83,6 +83,7 @@ export default function HomePage() {
   const [showCpfModal, setShowCpfModal] = useState(false);
   const [cpfInput, setCpfInput] = useState("");
   const [pendingPlan, setPendingPlan] = useState<"advanced" | "pro_plus" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
   useEffect(() => {
@@ -148,7 +149,7 @@ export default function HomePage() {
     try {
       setCheckoutPlanLoading(pendingPlan);
       if (typeof window !== "undefined") window.localStorage.setItem(CPF_STORAGE_KEY, digits);
-      const checkout = await billingCheckout(pendingPlan, digits);
+      const checkout = await billingCheckout(pendingPlan, digits, paymentMethod);
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL de redirecionamento");
       setShowCpfModal(false);
@@ -200,11 +201,35 @@ export default function HomePage() {
       {showCpfModal && pendingPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Confirmar CPF para pagamento</h3>
+            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Confirmar pagamento</h3>
             <p className="text-sm text-[#9CA3AF] mb-2">
-              Para habilitar o checkout em ambiente TEST, informe um CPF válido (11 dígitos).
+              CPF (opcional): preencha para evitar campos em branco na página de pagamento.
             </p>
-            <p className="text-xs text-[#6B7280] mb-4">Pagamento via PIX ou cartão (Mercado Pago)</p>
+            <p className="text-xs text-[#6B7280] mb-2">Método de pagamento</p>
+            <div className="flex gap-3 mb-4">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("PIX")}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                  paymentMethod === "PIX"
+                    ? "bg-[#2563EB]/20 border-[#2563EB] text-[#93C5FD]"
+                    : "bg-[#1F2937] border-[#374151] text-[#9CA3AF] hover:border-[#4B5563]"
+                }`}
+              >
+                PIX
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CREDIT_CARD")}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                  paymentMethod === "CREDIT_CARD"
+                    ? "bg-[#2563EB]/20 border-[#2563EB] text-[#93C5FD]"
+                    : "bg-[#1F2937] border-[#374151] text-[#9CA3AF] hover:border-[#4B5563]"
+                }`}
+              >
+                Cartão
+              </button>
+            </div>
             <input
               type="text"
               value={formatCpf(cpfInput)}
@@ -435,10 +460,10 @@ export default function HomePage() {
                 Popular
               </div>
               <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">AVANÇADO</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">Para evoluir</p>
+              <p className="text-[#9CA3AF] text-sm mb-4">R$ 47,90/mês · Acesso completo</p>
               <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> 2 estratégias</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> 3 ativos</li>
+                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
+                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Ranking + filtros</li>
               </ul>
               {isLoggedIn ? (
@@ -448,22 +473,22 @@ export default function HomePage() {
                   disabled={checkoutPlanLoading === "advanced"}
                   className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
-                  {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado"}
+                  {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$ 47,90/mês"}
                 </button>
               ) : (
                 <Link
                   href={planQuery("advanced")}
                   className="block w-full py-3 rounded-xl text-sm font-semibold text-center text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
-                  Assinar Avançado
+                  Assinar Avançado R$ 47,90/mês
                 </Link>
               )}
             </div>
 
-            {/* PRO+ */}
+            {/* PRO+ Vitalício */}
             <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
-              <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">PRO+</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">Máximo desempenho</p>
+              <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">PRO+ VITALÍCIO</h4>
+              <p className="text-[#9CA3AF] text-sm mb-4">R$ 199 · Pagamento único</p>
               <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>
@@ -477,14 +502,14 @@ export default function HomePage() {
                   disabled={checkoutPlanLoading === "pro_plus"}
                   className="w-full py-3 rounded-xl text-sm font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
                 >
-                  {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Assinar PRO+"}
+                  {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Assinar PRO+ Vitalício R$ 199"}
                 </button>
               ) : (
                 <Link
                   href={planQuery("pro_plus")}
                   className="block w-full py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
                 >
-                  Assinar PRO+
+                  Assinar PRO+ Vitalício R$ 199
                 </Link>
               )}
             </div>

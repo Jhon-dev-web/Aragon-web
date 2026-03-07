@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { fetchMe, getAuthToken, setAuthToken, setStoredPlan, getStoredPlan, type MeResponse } from "../api";
-import { clearAll as authStoreClearAll } from "../util/AuthStore";
+import { clearAll as authStoreClearAll, setStoredUserName } from "../util/AuthStore";
 
 export type AuthUser = MeResponse;
 
@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (me) {
         setUser(me);
         setStoredPlan(me.plan);
+        if (me.name != null) setStoredUserName(me.name);
       } else {
         setUser(null);
       }
@@ -84,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const stored = getStoredPlan();
     if (stored) {
-      setUser((prev) => (prev ? { ...prev, plan: stored } : { id: "", email: "", plan: stored }));
+      setUser((prev) => (prev ? { ...prev, plan: stored } : { id: "", email: "", plan: stored, name: null }));
     }
     fetchUser();
   }, [fetchUser]);

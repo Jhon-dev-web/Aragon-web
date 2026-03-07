@@ -11,6 +11,7 @@ const BULLEX_REGISTER_URL = "https://trade.bull-ex.com/register?aff=814493&aff_m
 export default function LoginPage() {
   const router = useRouter();
   const { fetchUser } = useAuth();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -43,6 +44,13 @@ export default function LoginPage() {
     setError("");
     const em = email.trim();
     const pw = password;
+    if (mode === "register") {
+      const displayName = name.trim();
+      if (!displayName || displayName.length < 2) {
+        setError("Nome deve ter pelo menos 2 caracteres.");
+        return;
+      }
+    }
     if (!em || !pw) {
       setError("Preencha email e senha.");
       return;
@@ -53,7 +61,7 @@ export default function LoginPage() {
         if (mode === "login") {
           await authLogin(em, pw);
         } else {
-          await authRegister(em, pw);
+          await authRegister(name.trim(), em, pw);
         }
         await fetchUser();
       })();
@@ -118,6 +126,19 @@ export default function LoginPage() {
               </p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === "register" && (
+                <label className="block">
+                  <span className="block text-xs text-[#9CA3AF] mb-1">Nome completo</span>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); setError(""); }}
+                    className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none placeholder:text-[#6B7280]"
+                    autoComplete="name"
+                    placeholder="Seu nome (será usado na compra)"
+                  />
+                </label>
+              )}
               <label className="block">
                 <span className="block text-xs text-[#9CA3AF] mb-1">Email</span>
                 <input
