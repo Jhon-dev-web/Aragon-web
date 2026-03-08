@@ -5,7 +5,6 @@
 
 const tokenKey = "aragon_token";
 const userEmailKey = "aa_user_email";
-const userNameKey = "aa_user_name";
 const userPlanKey = "aa_user_plan";
 
 const LEGACY_TOKEN_KEY = "aa_auth_token";
@@ -40,7 +39,6 @@ export function clearToken(): void {
 export function clearUserProfile(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(userEmailKey);
-  window.localStorage.removeItem(userNameKey);
 }
 
 export function clearPlan(): void {
@@ -67,16 +65,6 @@ export function getStoredUserEmail(): string | null {
 export function setStoredUserEmail(email: string): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(userEmailKey, email.toLowerCase());
-}
-
-export function getStoredUserName(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(userNameKey);
-}
-
-export function setStoredUserName(name: string): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(userNameKey, (name || "").trim());
 }
 
 export function getStoredPlan(): string | null {

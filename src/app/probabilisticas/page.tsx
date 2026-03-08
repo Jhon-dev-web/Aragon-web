@@ -15,7 +15,6 @@ import {
   getCyclesRequestUrl,
   getAuthToken,
   getCurrentUserEmail,
-  getCurrentUserName,
   redeemPromoCode,
   type CatalogResponse,
   type CatalogByAsset,
@@ -608,6 +607,8 @@ function ProbabilisticasContent() {
         userCancelledRequestIdRef.current = null;
         return;
       }
+      // Não mostrar erro se este request já foi substituído (ex.: usuário trocou de estratégia)
+      if (currentRankingRequestIdRef.current !== myId) return;
       const msg = e instanceof Error ? e.message : "Erro ao atualizar ranking";
       setError(msg);
       if (msg.includes("HTTP 403")) setShowUpgradeModal(true);
@@ -919,7 +920,8 @@ function ProbabilisticasContent() {
       )}
 
       <HeaderBar
-        displayName={user?.name ?? user?.email ?? getCurrentUserName() ?? getCurrentUserEmail() ?? ""}
+        userEmail={user?.email ?? getCurrentUserEmail() ?? ""}
+        userName={user?.name}
         planLabel={currentPlanLabel}
         planExpiryText={planExpiryText}
         brokerStatus={

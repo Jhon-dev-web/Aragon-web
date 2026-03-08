@@ -13,22 +13,19 @@ import {
   clearUserProfile,
   clearPlan,
   setStoredUserEmail,
-  setStoredUserName,
   setStoredPlan as authStoreSetStoredPlan,
   getStoredPlan as authStoreGetStoredPlan,
   getStoredUserEmail,
-  getStoredUserName,
 } from "./util/AuthStore";
 
 let inMemoryToken: string | null = null;
 
-export function setAuthToken(token: string | null, email?: string, name?: string, plan?: string) {
+export function setAuthToken(token: string | null, email?: string, plan?: string) {
   inMemoryToken = token;
   if (typeof window !== "undefined") {
     authStoreSetToken(token);
     if (token) {
       if (email) setStoredUserEmail(email);
-      if (name !== undefined) setStoredUserName(name);
       if (plan !== undefined) authStoreSetStoredPlan(plan);
     } else {
       clearUserProfile();
@@ -39,7 +36,6 @@ export function setAuthToken(token: string | null, email?: string, name?: string
 
 export type MeResponse = {
   id: string;
-  name?: string | null;
   email: string;
   plan: string;
   plan_started_at?: string | null;
@@ -47,6 +43,8 @@ export type MeResponse = {
   entitlement_expires_at?: string | null;
   entitlement_source?: string | null;
   premium_source?: string | null;
+  name?: string | null;
+  phone?: string | null;
 };
 
 export function getStoredPlan(): string | null {
@@ -67,7 +65,6 @@ export async function fetchMe(): Promise<MeResponse | null> {
     const data = JSON.parse(text);
     return {
       id: String(data.id ?? ""),
-      name: data.name == null ? null : String(data.name),
       email: String(data.email ?? ""),
       plan: String(data.plan ?? "free"),
       plan_started_at:
@@ -80,6 +77,8 @@ export async function fetchMe(): Promise<MeResponse | null> {
         data.entitlement_source == null ? null : String(data.entitlement_source),
       premium_source:
         data.premium_source == null ? null : String(data.premium_source),
+      name: data.name == null ? null : String(data.name),
+      phone: data.phone == null ? null : String(data.phone),
     };
   } catch {
     return null;
@@ -96,10 +95,6 @@ export function getAuthToken(): string | null {
 
 export function getCurrentUserEmail(): string | null {
   return getStoredUserEmail();
-}
-
-export function getCurrentUserName(): string | null {
-  return getStoredUserName();
 }
 
 function authHeaders(extra?: HeadersInit): HeadersInit {
@@ -198,7 +193,6 @@ export type AdminPromoCode = {
 
 export type AdminUserItem = {
   id: string;
-  name?: string | null;
   email: string;
   created_at?: string | null;
   saved_plan: string;
@@ -980,11 +974,19 @@ export async function authLogin(email: string, password: string): Promise<AuthTo
   return data;
 }
 
-export async function authRegister(name: string, email: string, password: string): Promise<AuthTokenResponse> {
+export async function authRegister(
+  email: string,
+  password: string,
+  name?: string | null,
+  phone?: string | null,
+): Promise<AuthTokenResponse> {
+  const body: Record<string, string> = { email, password };
+  if (name != null && String(name).trim()) body.name = String(name).trim();
+  if (phone != null && String(phone).trim()) body.phone = String(phone).trim();
   const r = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: (name || "").trim(), email, password }),
+    body: JSON.stringify(body),
   });
   const text = await r.text();
   if (!r.ok) {
@@ -1009,7 +1011,7 @@ export async function authRegister(name: string, email: string, password: string
   if (!data?.access_token) {
     throw new Error("Resposta inválida do servidor. Tente novamente.");
   }
-  setAuthToken(data.access_token, email, (name || "").trim());
+  setAuthToken(data.access_token, email);
   return data;
 }
 

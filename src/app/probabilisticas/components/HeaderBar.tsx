@@ -4,8 +4,8 @@ import Link from "next/link";
 import { tw } from "../design-tokens";
 
 export type HeaderBarProps = {
-  /** Nome do usuário a exibir no header (nome cadastrado; fallback para email se não houver nome). */
-  displayName: string;
+  userEmail: string;
+  userName?: string | null;
   planLabel: string;
   planExpiryText: string;
   brokerStatus: string;
@@ -13,12 +13,16 @@ export type HeaderBarProps = {
 };
 
 export function HeaderBar({
-  displayName,
+  userEmail,
+  userName,
   planLabel,
   planExpiryText,
   brokerStatus,
   onLogout,
 }: HeaderBarProps) {
+  const displayName = (userName || "").trim();
+  const hasName = displayName.length > 0;
+
   return (
     <header
       className={`flex items-center justify-between px-4 py-3 border-b ${tw.border} ${tw.bgPage} shrink-0`}
@@ -51,9 +55,11 @@ export function HeaderBar({
         >
           Admin
         </Link>
-        <span className={`text-xs ${tw.textMuted} hidden sm:inline`} aria-hidden>
-          Logado: {displayName || "Usuário"}
-        </span>
+        {hasName && (
+          <span className={`text-xs ${tw.textMuted} hidden sm:inline`} aria-hidden>
+            Logado: {displayName}
+          </span>
+        )}
         <span className={`text-xs ${tw.textMuted} hidden md:inline`} aria-hidden>
           Plano: {planLabel}{planExpiryText}
         </span>
@@ -66,18 +72,30 @@ export function HeaderBar({
           Sair
         </button>
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111827] border border-[#1F2937]">
-          <div
-            className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold text-white"
-            aria-hidden
-          >
-            {(displayName || "U")[0]?.toUpperCase()}
-          </div>
-          <div className="flex flex-col items-start hidden sm:block">
-            <span className={`text-xs ${tw.textPrimary} truncate max-w-[220px]`}>
-              {displayName || "Usuário"}
-            </span>
-            <span className={`text-[10px] ${tw.textMuted}`}>{brokerStatus}</span>
-          </div>
+          {hasName ? (
+            <>
+              <div
+                className="w-7 h-7 rounded-full bg-[#2563EB] flex items-center justify-center text-xs font-semibold text-white"
+                aria-hidden
+              >
+                {displayName[0]?.toUpperCase()}
+              </div>
+              <div className="flex flex-col items-start">
+                <span className={`text-xs ${tw.textPrimary} truncate max-w-[220px]`}>
+                  {displayName}
+                </span>
+                <span className={`text-[10px] ${tw.textMuted}`}>{brokerStatus}</span>
+              </div>
+            </>
+          ) : (
+            <div
+              className="w-7 h-7 rounded-full bg-[#1E293B] flex items-center justify-center text-base"
+              title={userEmail || "Ver email"}
+              aria-label={`Email: ${userEmail || ""}`}
+            >
+              👤
+            </div>
+          )}
         </div>
       </div>
     </header>
