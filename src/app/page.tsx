@@ -82,7 +82,6 @@ export default function HomePage() {
   const [showCpfModal, setShowCpfModal] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<"advanced" | "pro_plus" | null>(null);
   const [cpfInput, setCpfInput] = useState("");
-  const [installmentCount, setInstallmentCount] = useState(1);
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
   useEffect(() => {
@@ -141,7 +140,7 @@ export default function HomePage() {
     }
     try {
       setCheckoutPlanLoading(pendingPlan);
-      const checkout = await billingCheckout(pendingPlan, digits, "UNDEFINED", installmentCount);
+      const checkout = await billingCheckout(pendingPlan, digits, "UNDEFINED");
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL de redirecionamento");
       setShowCpfModal(false);
@@ -206,20 +205,6 @@ export default function HomePage() {
                 placeholder="000.000.000-00"
                 className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
               />
-            </label>
-            <label className="block mb-4">
-              <span className="block text-xs text-[#9CA3AF] mb-1">Parcelas (cartão de crédito)</span>
-              <select
-                value={installmentCount}
-                onChange={(e) => setInstallmentCount(Number(e.target.value))}
-                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                  <option key={n} value={n}>
-                    {n === 1 ? "1x à vista" : `${n}x sem juros`}
-                  </option>
-                ))}
-              </select>
             </label>
             <div className="flex gap-3">
               <button

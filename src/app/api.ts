@@ -130,16 +130,12 @@ export async function billingCheckout(
   plan: BillingPlan,
   cpf?: string,
   paymentMethod: PaymentMethod = "UNDEFINED",
-  installmentCount: number = 1,
 ): Promise<BillingCheckoutResponse> {
-  const body: {
-    plan: BillingPlan;
-    cpf?: string;
-    payment_method: PaymentMethod;
-    installment_count?: number;
-  } = { plan, payment_method: paymentMethod };
+  const body: { plan: BillingPlan; cpf?: string; payment_method: PaymentMethod } = {
+    plan,
+    payment_method: paymentMethod,
+  };
   if (cpf) body.cpf = cpf;
-  if (installmentCount >= 1 && installmentCount <= 10) body.installment_count = installmentCount;
   const r = await fetch(`${API_BASE}/billing/checkout`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),

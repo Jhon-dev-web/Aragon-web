@@ -18,7 +18,6 @@ export default function LoginPage() {
   const [planAfterAuth, setPlanAfterAuth] = useState<BillingPlan | null>(null);
   const [showCpfForCheckout, setShowCpfForCheckout] = useState(false);
   const [cpfForCheckout, setCpfForCheckout] = useState("");
-  const [installmentCountForCheckout, setInstallmentCountForCheckout] = useState(1);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -68,7 +67,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const checkout = await billingCheckout(planAfterAuth, digits, "UNDEFINED", installmentCountForCheckout);
+      const checkout = await billingCheckout(planAfterAuth, digits, "UNDEFINED");
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL de redirecionamento");
       if (typeof window !== "undefined") window.location.href = url;
@@ -137,18 +136,6 @@ export default function LoginPage() {
                 placeholder="000.000.000-00"
                 className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
               />
-            </label>
-            <label className="block mb-4">
-              <span className="block text-xs text-[#9CA3AF] mb-1">Parcelas (cartão de crédito)</span>
-              <select
-                value={installmentCountForCheckout}
-                onChange={(e) => setInstallmentCountForCheckout(Number(e.target.value))}
-                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                  <option key={n} value={n}>{n === 1 ? "1x à vista" : `${n}x sem juros`}</option>
-                ))}
-              </select>
             </label>
             {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
             <div className="flex gap-3">
