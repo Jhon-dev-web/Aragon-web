@@ -117,7 +117,7 @@ function safeParseJson<T>(text: string, msg = "Resposta inválida do servidor. T
   }
 }
 
-export type BillingPlan = "advanced" | "pro_plus";
+export type BillingPlan = "advanced" | "pro_plus" | "vitalicio" | "avancado";
 export type PaymentMethod = "PIX" | "CREDIT_CARD" | "UNDEFINED";
 export type BillingCheckoutResponse = {
   checkout_url?: string;
@@ -130,12 +130,19 @@ export async function billingCheckout(
   plan: BillingPlan,
   cpf?: string,
   paymentMethod: PaymentMethod = "UNDEFINED",
+  installmentCount?: number,
 ): Promise<BillingCheckoutResponse> {
-  const body: { plan: BillingPlan; cpf?: string; payment_method: PaymentMethod } = {
+  const body: {
+    plan: BillingPlan;
+    cpf?: string;
+    payment_method: PaymentMethod;
+    installment_count?: number;
+  } = {
     plan,
     payment_method: paymentMethod,
   };
   if (cpf) body.cpf = cpf;
+  if (installmentCount != null && installmentCount >= 1) body.installment_count = installmentCount;
   const r = await fetch(`${API_BASE}/billing/checkout`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),

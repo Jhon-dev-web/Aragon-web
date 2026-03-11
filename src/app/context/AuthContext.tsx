@@ -14,7 +14,9 @@ export type PlanLimits = {
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: { maxStrategies: 1, maxAssets: 1 },
   advanced: { maxStrategies: 2, maxAssets: 3 },
+  avancado: { maxStrategies: 2, maxAssets: 3 },
   pro_plus: { maxStrategies: 999, maxAssets: 999 },
+  vitalicio: { maxStrategies: 999, maxAssets: 999 },
 };
 
 export function getPlanLimits(plan: string): PlanLimits {

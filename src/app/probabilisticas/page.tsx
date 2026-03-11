@@ -738,8 +738,15 @@ function ProbabilisticasContent() {
   const maxCyclesPerAsset = rankingResult?.debug?.max_setups_per_asset ?? 0;
   const fetchPagesUsed = rankingResult?.debug?.fetch_pages_used;
   const currentPlanLabel =
-    user?.plan === "pro_plus" ? "PRO+ Vitalício" : user?.plan === "advanced" ? "Avançado" : "Grátis";
-  const planExpiryText = user?.plan === "advanced" ? ` · expira em ${formatExpiry(user?.plan_expires_at)}` : "";
+    user?.plan === "pro_plus" || user?.plan === "vitalicio"
+      ? "PRO+ Vitalício"
+      : user?.plan === "advanced" || user?.plan === "avancado"
+        ? "Avançado"
+        : "Grátis";
+  const planExpiryText =
+    user?.plan === "advanced" || user?.plan === "avancado"
+      ? ` · expira em ${formatExpiry(user?.plan_expires_at)}`
+      : "";
   const promoExpiryText =
     user?.entitlement_expires_at && user?.entitlement_source
       ? `${user.entitlement_source} até ${formatExpiry(user.entitlement_expires_at)}`

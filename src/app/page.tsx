@@ -391,7 +391,7 @@ export default function HomePage() {
         {/* Planos */}
         <section id="planos" className="px-4 sm:px-6 py-14 sm:py-18 border-t border-[#1E293B]/80 scroll-mt-6">
           <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-2">Planos</h3>
-          <p className="text-center text-[#94A3B8] text-sm mb-10">Pagamento via PIX ou cartão (Mercado Pago)</p>
+          <p className="text-center text-[#94A3B8] text-sm mb-10">Pagamento via PIX ou cartão (Asaas)</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* GRÁTIS */}
             <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
@@ -426,7 +426,7 @@ export default function HomePage() {
                 Popular
               </div>
               <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">AVANÇADO</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">R$ 47,90/mês · Acesso completo</p>
+              <p className="text-[#9CA3AF] text-sm mb-4">Assinatura mensal · Renovação automática</p>
               <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>
@@ -439,14 +439,14 @@ export default function HomePage() {
                   disabled={checkoutPlanLoading === "advanced"}
                   className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
-                  {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado R$ 47,90/mês"}
+                  {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado · R$ 47,90/mês"}
                 </button>
               ) : (
                 <Link
                   href={planQuery("advanced")}
                   className="block w-full py-3 rounded-xl text-sm font-semibold text-center text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
                 >
-                  Assinar Avançado R$ 47,90/mês
+                  Assinar Avançado · R$ 47,90/mês
                 </Link>
               )}
             </div>
@@ -454,7 +454,7 @@ export default function HomePage() {
             {/* PRO+ Vitalício */}
             <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
               <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">PRO+ VITALÍCIO</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">R$ 199 · Pagamento único</p>
+              <p className="text-[#9CA3AF] text-sm mb-4">Pagamento único · Pode parcelar no cartão</p>
               <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>

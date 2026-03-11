@@ -32,8 +32,8 @@ export default function LoginPage() {
       return () => clearTimeout(t);
     }
     const plan = params.get("plan");
-    if (plan === "advanced" || plan === "pro_plus") {
-      setPlanAfterAuth(plan);
+    if (plan === "advanced" || plan === "pro_plus" || plan === "vitalicio" || plan === "avancado") {
+      setPlanAfterAuth(plan as BillingPlan);
     }
   }, []);
 
@@ -42,7 +42,7 @@ export default function LoginPage() {
     const token = getAuthToken();
     const params = new URLSearchParams(window.location.search);
     const plan = params.get("plan");
-    if (token && !(plan === "advanced" || plan === "pro_plus")) {
+    if (token && !(plan === "advanced" || plan === "pro_plus" || plan === "vitalicio" || plan === "avancado")) {
       router.replace("/probabilisticas");
     }
   }, [router]);
@@ -104,7 +104,7 @@ export default function LoginPage() {
 
       // Se veio de um clique em plano na landing (?plan=advanced|pro_plus),
       // pedir CPF (Asaas exige) e depois ir para o checkout.
-      if (planAfterAuth && (planAfterAuth === "advanced" || planAfterAuth === "pro_plus")) {
+      if (planAfterAuth && ["advanced", "pro_plus", "vitalicio", "avancado"].includes(planAfterAuth)) {
         setShowCpfForCheckout(true);
         setLoading(false);
         return;
