@@ -745,11 +745,24 @@ function ProbabilisticasContent() {
       ? `${user.entitlement_source} até ${formatExpiry(user.entitlement_expires_at)}`
       : null;
 
+  const onlyDigits = (s: string) => s.replace(/\D/g, "").slice(0, 11);
+  const formatCpfDisplay = (s: string) => {
+    const d = onlyDigits(s);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  };
+
   const handleUpgradeCheckout = useCallback(async (plan: "advanced" | "pro_plus") => {
+    const cpfDigits = onlyDigits(upgradeCpf);
+    if (cpfDigits.length !== 11) {
+      setError("Informe seu CPF (11 dígitos) para gerar a cobrança. O Asaas exige essa identificação.");
+      return;
+    }
     try {
       setCheckoutPlanLoading(plan);
-      // payment_method = UNDEFINED -> escolha PIX/Cartão ficará na página de pagamento (Asaas)
-      const checkout = await billingCheckout(plan, undefined, "UNDEFINED");
+      setError(null);
+      const checkout = await billingCheckout(plan, cpfDigits, "UNDEFINED");
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL");
       window.location.href = url;
@@ -758,7 +771,7 @@ function ProbabilisticasContent() {
     } finally {
       setCheckoutPlanLoading(null);
     }
-  }, []);
+  }, [upgradeCpf]);
 
   const handleRedeemPromo = useCallback(async () => {
     const code = promoCode.trim();
@@ -845,9 +858,19 @@ function ProbabilisticasContent() {
             <p className="text-sm text-[#9CA3AF] mb-2">
               Assine Avançado ou PRO+ Vitalício para liberar todas as estratégias e ativos.
             </p>
-            <p className="text-xs text-[#6B7280] mb-4">
-              Você será redirecionado para a página de pagamento, onde poderá escolher PIX ou cartão.
+            <p className="text-xs text-[#6B7280] mb-2">
+              O Asaas exige CPF para gerar a cobrança. Você não preenche na página deles.
             </p>
+            <label className="block mb-3">
+              <span className="block text-xs text-[#6B7280] mb-1">CPF</span>
+              <input
+                type="text"
+                value={formatCpfDisplay(upgradeCpf)}
+                onChange={(e) => { setUpgradeCpf(e.target.value); setError(null); }}
+                placeholder="000.000.000-00"
+                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] placeholder-[#6B7280] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+              />
+            </label>
             <div className="space-y-3">
               <button
                 type="button"

@@ -16,6 +16,8 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [planAfterAuth, setPlanAfterAuth] = useState<BillingPlan | null>(null);
+  const [showCpfForCheckout, setShowCpfForCheckout] = useState(false);
+  const [cpfForCheckout, setCpfForCheckout] = useState("");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,12 +40,43 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const token = getAuthToken();
-    if (token) {
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get("plan");
+    if (token && !(plan === "advanced" || plan === "pro_plus")) {
       router.replace("/probabilisticas");
     }
   }, [router]);
 
   const LOGIN_TIMEOUT_MS = 28_000;
+  const onlyDigits = (v: string) => v.replace(/\D/g, "").slice(0, 11);
+  const formatCpf = (v: string) => {
+    const d = onlyDigits(v);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
+  };
+
+  const handleCpfCheckout = async () => {
+    if (!planAfterAuth) return;
+    const digits = onlyDigits(cpfForCheckout);
+    if (digits.length !== 11) {
+      setError("Informe seu CPF (11 dígitos). O Asaas exige para gerar a cobrança.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const checkout = await billingCheckout(planAfterAuth, digits, "UNDEFINED");
+      const url = checkout.checkout_url ?? checkout.init_point;
+      if (!url) throw new Error("Checkout sem URL de redirecionamento");
+      if (typeof window !== "undefined") window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao iniciar checkout.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,18 +103,11 @@ export default function LoginPage() {
       await Promise.race([loginTask, timeoutPromise]);
 
       // Se veio de um clique em plano na landing (?plan=advanced|pro_plus),
-      // inicia o checkout automaticamente após login/cadastro.
+      // pedir CPF (Asaas exige) e depois ir para o checkout.
       if (planAfterAuth && (planAfterAuth === "advanced" || planAfterAuth === "pro_plus")) {
-        try {
-          const checkout = await billingCheckout(planAfterAuth, undefined, "UNDEFINED");
-          const url = checkout.checkout_url ?? checkout.init_point;
-          if (!url) throw new Error("Checkout sem URL de redirecionamento");
-          router.replace(url);
-          return;
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Falha ao iniciar checkout após login.");
-          return;
-        }
+        setShowCpfForCheckout(true);
+        setLoading(false);
+        return;
       }
 
       router.replace("/probabilisticas");
@@ -94,6 +120,44 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
+      {showCpfForCheckout && planAfterAuth && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Identificação para pagamento</h3>
+            <p className="text-sm text-[#9CA3AF] mb-4">
+              O Asaas exige CPF para gerar a cobrança. Você não preenche isso na página do Asaas.
+            </p>
+            <label className="block mb-4">
+              <span className="block text-xs text-[#9CA3AF] mb-1">CPF</span>
+              <input
+                type="text"
+                value={formatCpf(cpfForCheckout)}
+                onChange={(e) => { setCpfForCheckout(e.target.value); setError(""); }}
+                placeholder="000.000.000-00"
+                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+              />
+            </label>
+            {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowCpfForCheckout(false); setPlanAfterAuth(null); setError(""); router.replace("/probabilisticas"); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB]"
+              >
+                Depois
+              </button>
+              <button
+                type="button"
+                onClick={handleCpfCheckout}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white disabled:opacity-70"
+              >
+                {loading ? "Abrindo..." : "Ir ao pagamento"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {logoutToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl bg-[#1F2937] border border-[#374151] text-[#E5E7EB] text-sm shadow-xl flex items-center gap-3">
           <span>Você saiu da conta.</span>

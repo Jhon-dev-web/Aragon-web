@@ -79,6 +79,9 @@ export default function HomePage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Recurso em breve.");
   const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
+  const [showCpfModal, setShowCpfModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<"advanced" | "pro_plus" | null>(null);
+  const [cpfInput, setCpfInput] = useState("");
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
   useEffect(() => {
@@ -118,16 +121,31 @@ export default function HomePage() {
 
   const planQuery = (plan: "free" | "advanced" | "pro_plus") => `/login?plan=${plan}`;
 
-  const startCheckout = async (plan: "advanced" | "pro_plus") => {
+  const onlyDigits = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+  const formatCpf = (value: string) => {
+    const d = onlyDigits(value);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
+  };
+
+  const handleConfirmCpfCheckout = async () => {
+    if (!pendingPlan) return;
+    const digits = onlyDigits(cpfInput);
+    if (digits.length !== 11) {
+      setToastMessage("Informe seu CPF (11 dígitos) para gerar a cobrança. O Asaas exige essa identificação.");
+      setShowToast(true);
+      return;
+    }
     try {
-      setCheckoutPlanLoading(plan);
-      // payment_method = UNDEFINED -> escolha PIX/Cartão fica na página do Asaas
-      const checkout = await billingCheckout(plan, undefined, "UNDEFINED");
+      setCheckoutPlanLoading(pendingPlan);
+      const checkout = await billingCheckout(pendingPlan, digits, "UNDEFINED");
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL de redirecionamento");
-      if (typeof window !== "undefined") {
-        window.location.href = url;
-      }
+      setShowCpfModal(false);
+      setPendingPlan(null);
+      window.location.href = url;
     } catch (err) {
       setToastMessage(err instanceof Error ? err.message : "Falha ao iniciar pagamento.");
       setShowToast(true);
@@ -146,7 +164,8 @@ export default function HomePage() {
       router.push("/probabilisticas");
       return;
     }
-    await startCheckout(plan);
+    setPendingPlan(plan);
+    setShowCpfModal(true);
   };
 
   return (
@@ -170,6 +189,43 @@ export default function HomePage() {
       </div>
 
       {showToast && <ToastInfo message={toastMessage} onDismiss={() => setShowToast(false)} />}
+      {showCpfModal && pendingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Identificação para pagamento</h3>
+            <p className="text-sm text-[#9CA3AF] mb-4">
+              O Asaas exige CPF ou CNPJ para gerar a cobrança. Você não precisará preencher de novo na página de pagamento.
+            </p>
+            <label className="block mb-4">
+              <span className="block text-xs text-[#9CA3AF] mb-1">CPF</span>
+              <input
+                type="text"
+                value={formatCpf(cpfInput)}
+                onChange={(e) => setCpfInput(e.target.value)}
+                placeholder="000.000.000-00"
+                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+              />
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowCpfModal(false); setPendingPlan(null); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCpfCheckout}
+                disabled={checkoutPlanLoading !== null}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors"
+              >
+                {checkoutPlanLoading ? "Abrindo..." : "Continuar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#1E293B]/80 shrink-0 bg-[#0B1224]/70 backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-3">
@@ -443,12 +499,13 @@ export default function HomePage() {
         <footer className="px-4 sm:px-6 py-10 border-t border-[#1E293B]/80">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#94A3B8]">
             <p>ARAGON ANALYTICS</p>
-            <p className="flex items-center gap-3">
+            <p className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
               <a href="#" className="hover:text-[#E5E7EB] transition-colors">Termos</a>
               <span>•</span>
               <a href="#" className="hover:text-[#E5E7EB] transition-colors">Privacidade</a>
               <span>•</span>
-              <a href="#" className="hover:text-[#E5E7EB] transition-colors">Contato</a>
+              <span>Contato:</span>
+              <a href="https://t.me/aragoncatalogador" target="_blank" rel="noopener noreferrer" className="hover:text-[#E5E7EB] transition-colors text-[#60A5FA]">Telegram @aragoncatalogador</a>
             </p>
           </div>
         </footer>
