@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authLogin, authRegister, getAuthToken } from "../api";
+import { authLogin, authRegister, getAuthToken, billingCheckout, type BillingPlan } from "../api";
 import { useAuth } from "../context/AuthContext";
 
 const BULLEX_REGISTER_URL = "https://trade.bull-ex.com/register?aff=814493&aff_model=revenue&afftrack=";
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [planAfterAuth, setPlanAfterAuth] = useState<BillingPlan | null>(null);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,6 +28,10 @@ export default function LoginPage() {
       setLogoutToast(true);
       const t = setTimeout(() => setLogoutToast(false), 5000);
       return () => clearTimeout(t);
+    }
+    const plan = params.get("plan");
+    if (plan === "advanced" || plan === "pro_plus") {
+      setPlanAfterAuth(plan);
     }
   }, []);
 
@@ -63,6 +68,22 @@ export default function LoginPage() {
         setTimeout(() => reject(new Error("Tempo esgotado. Verifique sua conexão e tente novamente.")), LOGIN_TIMEOUT_MS);
       });
       await Promise.race([loginTask, timeoutPromise]);
+
+      // Se veio de um clique em plano na landing (?plan=advanced|pro_plus),
+      // inicia o checkout automaticamente após login/cadastro.
+      if (planAfterAuth && (planAfterAuth === "advanced" || planAfterAuth === "pro_plus")) {
+        try {
+          const checkout = await billingCheckout(planAfterAuth, undefined, "UNDEFINED");
+          const url = checkout.checkout_url ?? checkout.init_point;
+          if (!url) throw new Error("Checkout sem URL de redirecionamento");
+          router.replace(url);
+          return;
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Falha ao iniciar checkout após login.");
+          return;
+        }
+      }
+
       router.replace("/probabilisticas");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao autenticar. Verifique email e senha.");

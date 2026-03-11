@@ -745,23 +745,11 @@ function ProbabilisticasContent() {
       ? `${user.entitlement_source} até ${formatExpiry(user.entitlement_expires_at)}`
       : null;
 
-  const onlyDigits = (s: string) => s.replace(/\D/g, "").slice(0, 11);
-  const formatCpfDisplay = (s: string) => {
-    const d = onlyDigits(s);
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-  };
-
   const handleUpgradeCheckout = useCallback(async (plan: "advanced" | "pro_plus") => {
     try {
       setCheckoutPlanLoading(plan);
-      const cpfDigits = onlyDigits(upgradeCpf);
-      const checkout = await billingCheckout(
-        plan,
-        cpfDigits.length === 11 ? cpfDigits : undefined,
-        upgradePaymentMethod,
-      );
+      // payment_method = UNDEFINED -> escolha PIX/Cartão ficará na página de pagamento (Asaas)
+      const checkout = await billingCheckout(plan, undefined, "UNDEFINED");
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL");
       window.location.href = url;
@@ -770,7 +758,7 @@ function ProbabilisticasContent() {
     } finally {
       setCheckoutPlanLoading(null);
     }
-  }, [upgradeCpf, upgradePaymentMethod]);
+  }, []);
 
   const handleRedeemPromo = useCallback(async () => {
     const code = promoCode.trim();
@@ -857,39 +845,9 @@ function ProbabilisticasContent() {
             <p className="text-sm text-[#9CA3AF] mb-2">
               Assine Avançado ou PRO+ Vitalício para liberar todas as estratégias e ativos.
             </p>
-            <p className="text-xs text-[#6B7280] mb-2">Método de pagamento</p>
-            <div className="flex gap-3 mb-3">
-              <button
-                type="button"
-                onClick={() => setUpgradePaymentMethod("PIX")}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  upgradePaymentMethod === "PIX"
-                    ? "bg-[#2563EB]/20 border-[#2563EB] text-[#93C5FD]"
-                    : "bg-[#0B1220] border-[#1F2937] text-[#9CA3AF] hover:border-[#374151]"
-                }`}
-              >
-                PIX
-              </button>
-              <button
-                type="button"
-                onClick={() => setUpgradePaymentMethod("CREDIT_CARD")}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  upgradePaymentMethod === "CREDIT_CARD"
-                    ? "bg-[#2563EB]/20 border-[#2563EB] text-[#93C5FD]"
-                    : "bg-[#0B1220] border-[#1F2937] text-[#9CA3AF] hover:border-[#374151]"
-                }`}
-              >
-                Cartão
-              </button>
-            </div>
-            <p className="text-xs text-[#6B7280] mb-2">CPF (opcional)</p>
-            <input
-              type="text"
-              value={formatCpfDisplay(upgradeCpf)}
-              onChange={(e) => setUpgradeCpf(e.target.value)}
-              placeholder="000.000.000-00"
-              className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] placeholder-[#6B7280] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none mb-4"
-            />
+            <p className="text-xs text-[#6B7280] mb-4">
+              Você será redirecionado para a página de pagamento, onde poderá escolher PIX ou cartão.
+            </p>
             <div className="space-y-3">
               <button
                 type="button"
