@@ -471,6 +471,7 @@ function ProbabilisticasContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeCpf, setUpgradeCpf] = useState("");
   const [upgradePaymentMethod, setUpgradePaymentMethod] = useState<PaymentMethod>("PIX");
+  const [upgradeInstallments, setUpgradeInstallments] = useState(1);
   const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
@@ -762,7 +763,7 @@ function ProbabilisticasContent() {
     try {
       setCheckoutPlanLoading(plan);
       setError(null);
-      const checkout = await billingCheckout(plan, cpfDigits, "UNDEFINED");
+      const checkout = await billingCheckout(plan, cpfDigits, "UNDEFINED", upgradeInstallments);
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL");
       window.location.href = url;
@@ -771,7 +772,7 @@ function ProbabilisticasContent() {
     } finally {
       setCheckoutPlanLoading(null);
     }
-  }, [upgradeCpf]);
+  }, [upgradeCpf, upgradeInstallments]);
 
   const handleRedeemPromo = useCallback(async () => {
     const code = promoCode.trim();
@@ -870,6 +871,18 @@ function ProbabilisticasContent() {
                 placeholder="000.000.000-00"
                 className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] placeholder-[#6B7280] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
               />
+            </label>
+            <label className="block mb-3">
+              <span className="block text-xs text-[#6B7280] mb-1">Parcelas (cartão de crédito)</span>
+              <select
+                value={upgradeInstallments}
+                onChange={(e) => setUpgradeInstallments(Number(e.target.value))}
+                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <option key={n} value={n}>{n === 1 ? "1x à vista" : `${n}x sem juros`}</option>
+                ))}
+              </select>
             </label>
             <div className="space-y-3">
               <button
