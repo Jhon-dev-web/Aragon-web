@@ -3,7 +3,7 @@
 /**
  * Aragon Analytics — Dashboard de probabilidade e ranking.
  * Refatoração UI/UX: apenas layout e apresentação; endpoints, cálculos e dados inalterados.
- * Componentes: HeaderBar, KpiRow, PromoCodeCard, BestNowHighlight, FilterBar, PairCard.
+ * Componentes: HeaderBar (com ícone de presente para código promocional), KpiRow, BestNowHighlight, FilterBar, PairCard.
  * Ordenação (assertividade/score/ciclos) e "Atualizado há" são apenas no front.
  */
 import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
@@ -16,6 +16,7 @@ import {
   getAuthToken,
   getCurrentUserEmail,
   redeemPromoCode,
+  startTrial,
   type CatalogResponse,
   type CatalogByAsset,
   type CyclesResponse,
@@ -29,7 +30,6 @@ import { isOtc, symbolToLabel } from "./utils";
 import {
   HeaderBar,
   KpiRow,
-  PromoCodeCard,
   BestNowHighlight,
   FilterBar,
   PairCard,
@@ -439,7 +439,7 @@ function savePrefs(prefs: Record<string, unknown>): void {
 function ProbabilisticasContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { planLimits, user, loading: authLoading, logout, fetchUser } = useAuth();
+  const { planLimits, user, loading: authLoading, logout, fetchUser, isAdmin } = useAuth();
   const maxStrategies = planLimits.maxStrategies;
   const maxAssets = planLimits.maxAssets;
   const allowedStrategies = STRATEGIES.slice(0, maxStrategies);
@@ -476,16 +476,34 @@ function ProbabilisticasContent() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoFeedback, setPromoFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [promoExpanded, setPromoExpanded] = useState(true);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [, setTick] = useState(0);
   const [sortOrder, setSortOrder] = useState<"assertividade" | "score" | "ciclos">("assertividade");
+  const [startTrialLoading, setStartTrialLoading] = useState(false);
+  const [trialCountdownSeconds, setTrialCountdownSeconds] = useState<number | null>(null);
 
   useEffect(() => {
     if (lastUpdatedAt == null) return;
     const t = setInterval(() => setTick((n) => n + 1), 60_000);
     return () => clearInterval(t);
   }, [lastUpdatedAt]);
+
+  const expiryIso = user?.subscription_expires_at ?? user?.plan_expires_at;
+  useEffect(() => {
+    if (user?.plan_status !== "trial" || !expiryIso) {
+      setTrialCountdownSeconds(null);
+      return;
+    }
+    const update = () => {
+      const end = new Date(expiryIso).getTime();
+      const now = Date.now();
+      const sec = Math.max(0, Math.floor((end - now) / 1000));
+      setTrialCountdownSeconds(sec);
+    };
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, [user?.plan_status, expiryIso]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -740,18 +758,19 @@ function ProbabilisticasContent() {
   const currentPlanLabel =
     user?.plan === "pro_plus" || user?.plan === "vitalicio"
       ? "PRO+ Vitalício"
-      : user?.plan === "advanced" || user?.plan === "avancado"
-        ? "Avançado"
-        : "Sem acesso";
+      : user?.plan_status === "trial"
+        ? "Trial"
+        : user?.plan === "advanced" || user?.plan === "avancado"
+          ? "Avançado"
+          : "Sem acesso";
   const planExpiryText =
-    user?.plan === "advanced" || user?.plan === "avancado"
-      ? ` · expira em ${formatExpiry(user?.plan_expires_at)}`
-      : "";
-  const promoExpiryText =
-    user?.entitlement_expires_at && user?.entitlement_source
-      ? `${user.entitlement_source} até ${formatExpiry(user.entitlement_expires_at)}`
-      : null;
-
+    user?.plan_status === "trial"
+      ? (trialCountdownSeconds != null
+          ? ` · ${trialCountdownSeconds <= 0 ? "encerrado" : `${Math.floor(trialCountdownSeconds / 86400)}d ${Math.floor((trialCountdownSeconds % 86400) / 3600)}h restantes`}`
+          : ` · expira em ${formatExpiry(user?.subscription_expires_at ?? user?.plan_expires_at)}`)
+      : user?.plan === "advanced" || user?.plan === "avancado"
+        ? ` · expira em ${formatExpiry(user?.plan_expires_at)}`
+        : "";
   const onlyDigits = (s: string) => s.replace(/\D/g, "").slice(0, 11);
   const formatCpfDisplay = (s: string) => {
     const d = onlyDigits(s);
@@ -805,6 +824,19 @@ function ProbabilisticasContent() {
       setPromoLoading(false);
     }
   }, [promoCode, fetchUser]);
+
+  const handleStartTrial = useCallback(async () => {
+    try {
+      setStartTrialLoading(true);
+      setError(null);
+      await startTrial();
+      await fetchUser();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível iniciar o trial.");
+    } finally {
+      setStartTrialLoading(false);
+    }
+  }, [fetchUser]);
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex flex-col">
@@ -923,7 +955,46 @@ function ProbabilisticasContent() {
           logout();
           router.push("/login");
         }}
+        showAdminLink={isAdmin}
+        promoCode={promoCode}
+        onPromoCodeChange={setPromoCode}
+        onRedeemPromo={handleRedeemPromo}
+        promoLoading={promoLoading}
+        promoFeedback={promoFeedback}
       />
+
+      {/* Banner: trial em andamento, trial encerrado ou opção de iniciar trial */}
+      {user?.plan_status === "trial" && trialCountdownSeconds != null && trialCountdownSeconds <= 0 && (
+        <div className="px-4 py-3 bg-amber-900/30 border-b border-amber-600/40 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-sm">
+          <span className="text-amber-200">Trial encerrado. Escolha um plano para continuar usando.</span>
+          <Link href="/#planos" className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-colors">
+            Ver planos
+          </Link>
+        </div>
+      )}
+      {user?.plan_status === "trial" && (trialCountdownSeconds == null || trialCountdownSeconds > 0) && (
+        <div className="px-4 py-2.5 bg-[#1E3A5F]/40 border-b border-[#2563EB]/40 flex items-center justify-center gap-2 text-sm text-[#93C5FD]">
+          <span>
+            Trial: {trialCountdownSeconds != null && trialCountdownSeconds > 0
+              ? `${Math.floor(trialCountdownSeconds / 86400)}d ${Math.floor((trialCountdownSeconds % 86400) / 3600)}h ${Math.floor((trialCountdownSeconds % 3600) / 60)}min restantes`
+              : "ativo"}
+            . Ao finalizar, escolha um plano.
+          </span>
+        </div>
+      )}
+      {user?.plan === "blocked" && user?.trial_used === false && (
+        <div className="px-4 py-3 bg-[#0F172A] border-b border-[#2563EB]/40 flex flex-wrap items-center justify-center gap-3 text-sm">
+          <span className="text-[#E5E7EB]">Quer testar o plano Avançado por 3 dias grátis?</span>
+          <button
+            type="button"
+            onClick={handleStartTrial}
+            disabled={startTrialLoading}
+            className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] hover:bg-[#3B82F6] disabled:opacity-60 text-white transition-colors"
+          >
+            {startTrialLoading ? "Ativando..." : "Iniciar teste de 3 dias"}
+          </button>
+        </div>
+      )}
 
       <div className="md:hidden sticky top-0 z-30 bg-[#0B1220] border-b border-[#1F2937] px-3 py-2">
         <div className="flex items-center gap-2">
@@ -1123,18 +1194,6 @@ function ProbabilisticasContent() {
       )}
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 py-4 pb-6 sm:px-4 sm:py-6">
-        <PromoCodeCard
-          planLabel={currentPlanLabel}
-          planExpiryText={planExpiryText ?? ""}
-          promoExpiryText={promoExpiryText}
-          promoCode={promoCode}
-          onPromoCodeChange={setPromoCode}
-          onRedeem={handleRedeemPromo}
-          promoLoading={promoLoading}
-          promoFeedback={promoFeedback}
-          defaultExpanded={promoExpanded}
-        />
-
         {removedStrategyToast && (
           <div className="mb-4 bg-amber-900/30 border border-amber-500 rounded-xl px-4 py-2 text-amber-200 text-sm">
             Estratégia removida: usando MHI.

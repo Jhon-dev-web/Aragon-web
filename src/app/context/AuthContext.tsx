@@ -29,6 +29,7 @@ type AuthStore = {
   fetchUser: () => Promise<void>;
   logout: () => void;
   planLimits: PlanLimits;
+  isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthStore>({
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthStore>({
   fetchUser: async () => {},
   logout: () => {},
   planLimits: PLAN_LIMITS.blocked,
+  isAdmin: false,
 });
 
 export function useAuth() {
@@ -92,9 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUser]);
 
   const planLimits = getPlanLimits(user?.plan ?? "blocked");
+  const isAdmin = user?.role === "admin";
 
   return (
-    <AuthContext.Provider value={{ user, loading, fetchUser, logout, planLimits }}>
+    <AuthContext.Provider value={{ user, loading, fetchUser, logout, planLimits, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

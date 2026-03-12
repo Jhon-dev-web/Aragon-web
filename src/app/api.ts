@@ -38,13 +38,17 @@ export type MeResponse = {
   id: string;
   email: string;
   plan: string;
+  plan_status?: string | null;
   plan_started_at?: string | null;
   plan_expires_at?: string | null;
+  subscription_expires_at?: string | null;
   entitlement_expires_at?: string | null;
   entitlement_source?: string | null;
   premium_source?: string | null;
   name?: string | null;
   phone?: string | null;
+  trial_used?: boolean;
+  role?: string;
 };
 
 export function getStoredPlan(): string | null {
@@ -67,10 +71,13 @@ export async function fetchMe(): Promise<MeResponse | null> {
       id: String(data.id ?? ""),
       email: String(data.email ?? ""),
       plan: String(data.plan ?? "blocked"),
+      plan_status: data.plan_status == null ? null : String(data.plan_status),
       plan_started_at:
         data.plan_started_at == null ? null : String(data.plan_started_at),
       plan_expires_at:
         data.plan_expires_at == null ? null : String(data.plan_expires_at),
+      subscription_expires_at:
+        data.subscription_expires_at == null ? null : String(data.subscription_expires_at),
       entitlement_expires_at:
         data.entitlement_expires_at == null ? null : String(data.entitlement_expires_at),
       entitlement_source:
@@ -79,6 +86,8 @@ export async function fetchMe(): Promise<MeResponse | null> {
         data.premium_source == null ? null : String(data.premium_source),
       name: data.name == null ? null : String(data.name),
       phone: data.phone == null ? null : String(data.phone),
+      trial_used: Boolean(data.trial_used),
+      role: data.role == null ? "user" : String(data.role),
     };
   } catch {
     return null;
@@ -185,6 +194,24 @@ export async function redeemPromoCode(code: string): Promise<PromoRedeemResponse
     throw new Error(text || "Falha ao resgatar código promocional");
   }
   return JSON.parse(text) as PromoRedeemResponse;
+}
+
+export async function startTrial(): Promise<void> {
+  const r = await fetch(`${API_BASE}/billing/start-trial`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+  });
+  const text = await r.text();
+  if (!r.ok) {
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>;
+      const detail = parsed.detail ?? parsed.message ?? parsed.error;
+      if (typeof detail === "string" && detail.trim()) throw new Error(detail);
+    } catch (e) {
+      if (e instanceof Error) throw e;
+    }
+    throw new Error(text || "Não foi possível iniciar o trial");
+  }
 }
 
 export type AdminPromoCode = {

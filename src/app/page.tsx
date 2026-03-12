@@ -84,18 +84,6 @@ export default function HomePage() {
   const [cpfInput, setCpfInput] = useState("");
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const toast = params.get("toast");
-    if (toast === "recurso_em_breve") {
-      setToastMessage("Recurso em breve.");
-      setShowToast(true);
-      const url = new URL(window.location.href);
-      url.searchParams.delete("toast");
-      window.history.replaceState({}, "", url.pathname + (url.search || ""));
-    }
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -330,7 +318,7 @@ export default function HomePage() {
                         Ver detalhes
                       </Link>
                     </div>
-                    <p className="text-[10px] text-[#6B7280] mt-3 text-center">Exemplo do dashboard (MILHÃO MINORIA)</p>
+                    <p className="text-[10px] text-[#6B7280] mt-3 text-center">Preview do dashboard</p>
                   </div>
                 </div>
               </div>
@@ -428,7 +416,7 @@ export default function HomePage() {
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>
                 <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Atualizações premium</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Acesso futuro ao robô grátis por 2 semanas</li>
+                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Acesso futuro ao robô por 2 semanas</li>
               </ul>
               {isLoggedIn ? (
                 <button
