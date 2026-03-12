@@ -66,7 +66,7 @@ export async function fetchMe(): Promise<MeResponse | null> {
     return {
       id: String(data.id ?? ""),
       email: String(data.email ?? ""),
-      plan: String(data.plan ?? "free"),
+      plan: String(data.plan ?? "blocked"),
       plan_started_at:
         data.plan_started_at == null ? null : String(data.plan_started_at),
       plan_expires_at:

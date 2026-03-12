@@ -12,7 +12,7 @@ export type PlanLimits = {
 };
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
-  free: { maxStrategies: 1, maxAssets: 1 },
+  blocked: { maxStrategies: 0, maxAssets: 0 },
   advanced: { maxStrategies: 2, maxAssets: 3 },
   avancado: { maxStrategies: 2, maxAssets: 3 },
   pro_plus: { maxStrategies: 999, maxAssets: 999 },
@@ -20,7 +20,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 };
 
 export function getPlanLimits(plan: string): PlanLimits {
-  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.blocked;
 }
 
 type AuthStore = {
@@ -36,7 +36,7 @@ const AuthContext = createContext<AuthStore>({
   loading: true,
   fetchUser: async () => {},
   logout: () => {},
-  planLimits: PLAN_LIMITS.free,
+  planLimits: PLAN_LIMITS.blocked,
 });
 
 export function useAuth() {
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
-  const planLimits = getPlanLimits(user?.plan ?? "free");
+  const planLimits = getPlanLimits(user?.plan ?? "blocked");
 
   return (
     <AuthContext.Provider value={{ user, loading, fetchUser, logout, planLimits }}>

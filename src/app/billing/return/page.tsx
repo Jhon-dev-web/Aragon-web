@@ -57,7 +57,7 @@ export default function BillingReturnPage() {
           </p>
           <p className="text-xs text-[#94A3B8] mt-3">Plano atual</p>
           <p className="text-sm font-medium mt-1">
-            {refreshing ? "Atualizando..." : (user?.plan || "free")}
+            {refreshing ? "Atualizando..." : (user?.plan || "blocked")}
           </p>
         </div>
 

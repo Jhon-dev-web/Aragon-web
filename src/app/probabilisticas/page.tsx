@@ -742,7 +742,7 @@ function ProbabilisticasContent() {
       ? "PRO+ Vitalício"
       : user?.plan === "advanced" || user?.plan === "avancado"
         ? "Avançado"
-        : "Grátis";
+        : "Sem acesso";
   const planExpiryText =
     user?.plan === "advanced" || user?.plan === "avancado"
       ? ` · expira em ${formatExpiry(user?.plan_expires_at)}`

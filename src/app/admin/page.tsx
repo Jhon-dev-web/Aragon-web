@@ -72,7 +72,7 @@ export default function AdminPage() {
   }, [user, loadData]);
 
   const activeUsersCount = useMemo(
-    () => users.filter((u) => (u.access_tier || "free") !== "free").length,
+    () => users.filter((u) => (u.access_tier || "blocked") !== "blocked").length,
     [users]
   );
 

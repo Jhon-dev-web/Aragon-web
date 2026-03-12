@@ -29,9 +29,9 @@ export function PromoCodeCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const statusBadge =
-    planLabel !== "Grátis" || promoExpiryText
+    planLabel !== "Sem acesso" || promoExpiryText
       ? `${planLabel}${planExpiryText ?? ""}${promoExpiryText ? ` · ${promoExpiryText}` : ""}`
-      : "Grátis";
+      : "Sem acesso";
 
   return (
     <section

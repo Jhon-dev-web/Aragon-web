@@ -119,7 +119,7 @@ export default function HomePage() {
     }
   };
 
-  const planQuery = (plan: "free" | "advanced" | "pro_plus") => `/login?plan=${plan}`;
+  const planQuery = (plan: "advanced" | "pro_plus") => `/login?plan=${plan}`;
 
   const onlyDigits = (value: string) => value.replace(/\D/g, "").slice(0, 11);
   const formatCpf = (value: string) => {
@@ -154,14 +154,10 @@ export default function HomePage() {
     }
   };
 
-  const handlePlanCta = async (plan: "free" | "advanced" | "pro_plus") => {
+  const handlePlanCta = async (plan: "advanced" | "pro_plus") => {
     const token = getAuthToken();
     if (!token) {
       router.push(planQuery(plan));
-      return;
-    }
-    if (plan === "free") {
-      router.push("/probabilisticas");
       return;
     }
     setPendingPlan(plan);
@@ -392,34 +388,7 @@ export default function HomePage() {
         <section id="planos" className="px-4 sm:px-6 py-14 sm:py-18 border-t border-[#1E293B]/80 scroll-mt-6">
           <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-2">Planos</h3>
           <p className="text-center text-[#94A3B8] text-sm mb-10">Pagamento via PIX ou cartão (Asaas)</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* GRÁTIS */}
-            <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
-              <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">GRÁTIS</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">Para começar</p>
-              <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> 1 estratégia</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> 1 ativo</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Ranking básico</li>
-              </ul>
-              {isLoggedIn ? (
-                <button
-                  type="button"
-                  onClick={() => handlePlanCta("free")}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-all shadow-md shadow-black/20 hover:shadow-lg hover:shadow-black/30"
-                >
-                  Começar grátis
-                </button>
-              ) : (
-                <Link
-                  href={planQuery("free")}
-                  className="block w-full py-3 rounded-xl text-sm font-medium text-center bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-all shadow-md shadow-black/20 hover:shadow-lg hover:shadow-black/30"
-                >
-                  Começar grátis
-                </Link>
-              )}
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {/* AVANÇADO - Popular com glow */}
             <div className="rounded-2xl p-6 bg-[#111827]/90 flex flex-col relative backdrop-blur-sm border-2 border-[#2563EB]/60 shadow-[0_0_24px_rgba(37,99,235,0.15)]">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#2563EB] text-white text-xs font-semibold shadow-lg">
