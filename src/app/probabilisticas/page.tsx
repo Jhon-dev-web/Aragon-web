@@ -554,11 +554,6 @@ function ProbabilisticasContent() {
     }
   }, [showOnboarding, strategy, windowMinutes, minSetups, topN, includeOtc, includeOpen, mgMode]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.innerWidth < 640) setPromoExpanded(false);
-  }, []);
-
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
