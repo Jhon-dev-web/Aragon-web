@@ -239,6 +239,10 @@ export type AdminUserItem = {
   is_admin_override?: boolean;
 };
 
+/**
+ * Headers para rotas /admin/*. A autorização é sempre no backend (JWT + role=admin + ADMIN_EMAIL).
+ * O frontend usa isAdmin apenas para exibição (link Admin) e redirecionamento; não concede acesso.
+ */
 function adminHeaders(adminKey?: string, extra?: HeadersInit): HeadersInit {
   const base = authHeaders(extra);
   if (adminKey && adminKey.trim()) {

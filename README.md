@@ -16,6 +16,21 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Testes E2E (Playwright)
+
+Os testes do fluxo de autorização do painel admin ficam em `e2e/admin-auth.spec.ts`. Requerem:
+
+1. **Frontend** rodando: `npm run dev` (em um terminal).
+2. **Backend** rodando (ex.: `http://127.0.0.1:8000`, configurável via `API_BACKEND_URL`).
+3. **Usuários de teste** no backend: `admin@test.com` e `user@test.com` com senha `pass`; `admin@test.com` deve ter `role=admin` (ex.: `ADMIN_EMAIL=admin@test.com`).
+
+Rodar os testes:
+
+```bash
+npx playwright install chromium   # uma vez, para instalar o browser
+npm run test:e2e
+```
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

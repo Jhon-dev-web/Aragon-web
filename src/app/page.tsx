@@ -3,71 +3,167 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { billingCheckout, getAuthToken, fetchPublicSummary, type PublicSummary } from "./api";
+import { billingCheckout, fetchPublicSummary, getAuthToken, type PublicSummary } from "./api";
 import { useAuth } from "./context/AuthContext";
+
+type CheckoutPlan = "advanced" | "pro_plus";
+
+const strategyItems = ["MHI", "3 Mosqueteiros", "Padrão 23", "Outras estratégias probabilísticas"];
+
+const benefitItems = [
+  {
+    title: "Catalogação automática",
+    description: "Centralize a leitura de estratégias sem depender de planilhas e buscas manuais.",
+  },
+  {
+    title: "Ganho de tempo",
+    description: "Chegue mais rápido ao que merece atenção e reduza o tempo gasto analisando ativo por ativo.",
+  },
+  {
+    title: "Análise histórica rápida",
+    description: "Veja padrões com base em histórico recente de forma simples e visual.",
+  },
+  {
+    title: "Estratégias organizadas",
+    description: "Compare MHI, 3 Mosqueteiros, Padrão 23 e outras abordagens em um só lugar.",
+  },
+  {
+    title: "Interface simples",
+    description: "Tela direta, com foco em leitura rápida para quem precisa decidir sem complicação.",
+  },
+  {
+    title: "Mais praticidade para operar",
+    description: "Menos tempo no operacional e mais clareza para identificar oportunidades.",
+  },
+];
+
+const proofItems = [
+  {
+    eyebrow: "Print principal",
+    title: "Faça login e visualize a catalogação em segundos",
+    caption: "Demonstração real do Aragon entregando os dados logo após o login, reforçando praticidade e rapidez.",
+    image: "/media/aragon-catalogando.gif",
+  },
+  {
+    eyebrow: "Print comparativo",
+    title: "Dados organizados para decisões mais rápidas",
+    caption: "Use este bloco para mostrar rankings, filtros e comparação visual entre estratégias.",
+  },
+  {
+    eyebrow: "Print operacional",
+    title: "Visualização prática das oportunidades",
+    caption: "Área ideal para mostrar a leitura que o usuário recebe antes de decidir a operação.",
+  },
+];
+
+const faqItems = [
+  {
+    question: "O que é o Aragon?",
+    answer:
+      "O Aragon é um sistema de catalogação estratégica para opções binárias que analisa histórico, organiza padrões e ajuda você a encontrar melhores oportunidades com mais rapidez.",
+  },
+  {
+    question: "Preciso ter experiência?",
+    answer:
+      "Não. A página e o painel foram pensados para facilitar a leitura mesmo para quem ainda está ganhando prática com catalogação e estratégias probabilísticas.",
+  },
+  {
+    question: "Quais estratégias o sistema analisa?",
+    answer:
+      "O sistema trabalha com estratégias como MHI, 3 Mosqueteiros, Padrão 23 e outras estratégias probabilísticas organizadas dentro da plataforma.",
+  },
+  {
+    question: "O acesso vitalício inclui o robô futuro?",
+    answer:
+      "Sim. O plano vitalício já destaca o benefício futuro de acesso ao robô quando esse recurso for liberado.",
+  },
+  {
+    question: "Como recebo acesso após a compra?",
+    answer:
+      "Depois da confirmação do pagamento, o acesso é liberado no fluxo da plataforma. Se você já estiver logado, segue direto para a etapa de pagamento.",
+  },
+];
 
 function ToastInfo({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDismiss, 5000);
     return () => clearTimeout(t);
   }, [onDismiss]);
+
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl bg-[#1F2937] border border-[#374151] text-[#E5E7EB] text-sm shadow-xl flex items-center gap-3">
+    <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-[#374151] bg-[#111827] px-4 py-3 text-sm text-[#E5E7EB] shadow-2xl">
       <span>{message}</span>
-      <button type="button" onClick={onDismiss} className="p-1 rounded-lg hover:bg-white/10 text-[#9CA3AF]" aria-label="Fechar">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="rounded-lg p-1 text-[#9CA3AF] transition-colors hover:bg-white/10"
+        aria-label="Fechar"
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </button>
     </div>
   );
 }
 
-function SkeletonMetric() {
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
   return (
-    <div className="rounded-xl h-24 bg-[#0F172A] animate-pulse border border-[#1E293B]" />
+    <div className="mx-auto max-w-3xl text-center">
+      <span className="inline-flex rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#93C5FD]">
+        {eyebrow}
+      </span>
+      <h2 className="mt-4 text-3xl font-bold tracking-tight text-[#F8FAFC] sm:text-4xl">{title}</h2>
+      <p className="mt-4 text-sm leading-6 text-[#94A3B8] sm:text-base">{description}</p>
+    </div>
   );
 }
 
-function TrustCards({ summary }: { summary: PublicSummary | null | undefined }) {
-  const loading = summary === undefined;
-  if (loading) {
+function SkeletonMetric() {
+  return <div className="h-28 animate-pulse rounded-2xl border border-[#1E293B] bg-[#0F172A]" />;
+}
+
+function SocialProofCards({ summary }: { summary: PublicSummary | null | undefined }) {
+  if (summary === undefined) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <SkeletonMetric />
         <SkeletonMetric />
         <SkeletonMetric />
       </div>
     );
   }
-  const s = summary ?? null;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="rounded-2xl px-6 py-7 bg-[#0F172A] border border-[#2563EB]/35 text-center backdrop-blur-sm shadow-[0_0_26px_rgba(37,99,235,0.12)] min-h-[150px] flex flex-col justify-center">
-        <p className="text-2xl sm:text-3xl font-bold text-[#E5E7EB] tabular-nums">
-          {s?.assets_evaluated ?? "—"}
-        </p>
-        <p className="text-sm text-[#94A3B8] mt-2">Ativos avaliados</p>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="rounded-2xl border border-[#1E293B] bg-[#0F172A]/90 p-6">
+        <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Base analisada</p>
+        <p className="mt-4 text-3xl font-bold text-[#F8FAFC]">{summary?.assets_evaluated ?? "Vários"}</p>
+        <p className="mt-2 text-sm text-[#94A3B8]">Ativos avaliados para leitura probabilística e comparação.</p>
       </div>
-      <div className="rounded-2xl px-6 py-7 bg-[#0F172A] border border-[#2563EB]/35 text-center backdrop-blur-sm shadow-[0_0_26px_rgba(37,99,235,0.12)] min-h-[150px] flex flex-col justify-center">
-        <p className="text-2xl sm:text-3xl font-bold text-[#E5E7EB] tabular-nums">
-          {s?.cycles_total != null && s.cycles_total > 0 ? s.cycles_total.toLocaleString("pt-BR") : "—"}
+      <div className="rounded-2xl border border-[#1E293B] bg-[#0F172A]/90 p-6">
+        <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Histórico processado</p>
+        <p className="mt-4 text-3xl font-bold text-[#F8FAFC]">
+          {summary?.cycles_total ? summary.cycles_total.toLocaleString("pt-BR") : "Em análise"}
         </p>
-        <p className="text-sm text-[#94A3B8] mt-2">Ciclos catalogados</p>
+        <p className="mt-2 text-sm text-[#94A3B8]">Ciclos catalogados para poupar análise manual no operacional.</p>
       </div>
-      <div className="rounded-2xl px-6 py-7 bg-[#0F172A] border border-[#2563EB]/35 text-center backdrop-blur-sm shadow-[0_0_26px_rgba(37,99,235,0.12)] min-h-[150px] flex flex-col justify-center">
-        {s?.top_asset ? (
-          <>
-            <p className="text-lg sm:text-xl font-semibold text-[#22C55E]">{s.top_asset.label}</p>
-            <p className="text-sm text-[#94A3B8] mt-2">
-              {s.top_asset.win_rate_pct}% · {s.top_asset.cycles} ciclos
-            </p>
-            <p className="text-xs text-[#6B7280] mt-1">Top ativo</p>
-          </>
-        ) : (
-          <>
-            <p className="text-xl font-semibold text-[#6B7280]">—</p>
-            <p className="text-sm text-[#9CA3AF] mt-1">Top ativo</p>
-          </>
-        )}
+      <div className="rounded-2xl border border-[#1E293B] bg-[#0F172A]/90 p-6">
+        <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Leitura em destaque</p>
+        <p className="mt-4 text-2xl font-bold text-[#22C55E]">{summary?.top_asset?.label ?? "Top ranking"}</p>
+        <p className="mt-2 text-sm text-[#94A3B8]">
+          {summary?.top_asset
+            ? `${summary.top_asset.win_rate_pct}% de assertividade em ${summary.top_asset.cycles} ciclos.`
+            : "Visualize rapidamente os cenários que merecem sua atenção."}
+        </p>
       </div>
     </div>
   );
@@ -78,15 +174,15 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Recurso em breve.");
-  const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<"advanced" | "pro_plus" | null>(null);
+  const [checkoutPlanLoading, setCheckoutPlanLoading] = useState<CheckoutPlan | null>(null);
   const [showCpfModal, setShowCpfModal] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<"advanced" | "pro_plus" | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<CheckoutPlan | null>(null);
   const [cpfInput, setCpfInput] = useState("");
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
 
-
   useEffect(() => {
     let cancelled = false;
+
     fetchPublicSummary()
       .then((data) => {
         if (!cancelled) setSummary(data ?? null);
@@ -94,38 +190,39 @@ export default function HomePage() {
       .catch(() => {
         if (!cancelled) setSummary(null);
       });
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const isLoggedIn = !!user || (!authLoading && !!getAuthToken());
-
-  const handleAcessarAragon = () => {
-    if (getAuthToken()) {
-      router.push("/probabilisticas");
-    } else {
-      router.push("/login");
-    }
-  };
-
-  const planQuery = (plan: "advanced" | "pro_plus") => `/login?plan=${plan}`;
+  const planQuery = (plan: CheckoutPlan) => `/login?plan=${plan}`;
 
   const onlyDigits = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+
   const formatCpf = (value: string) => {
-    const d = onlyDigits(value);
-    if (d.length <= 3) return d;
-    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-    if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
+    const digits = onlyDigits(value);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+  };
+
+  const handleAcessarAragon = () => {
+    router.push(getAuthToken() ? "/probabilisticas" : "/login");
   };
 
   const handleConfirmCpfCheckout = async () => {
     if (!pendingPlan) return;
+
     const digits = onlyDigits(cpfInput);
     if (digits.length !== 11) {
-      setToastMessage("Informe seu CPF (11 dígitos) para gerar a cobrança. O Asaas exige essa identificação.");
+      setToastMessage("Informe seu CPF com 11 dígitos para gerar a cobrança.");
       setShowToast(true);
       return;
     }
+
     try {
       setCheckoutPlanLoading(pendingPlan);
       const checkout = await billingCheckout(pendingPlan, digits, "UNDEFINED");
@@ -142,9 +239,8 @@ export default function HomePage() {
     }
   };
 
-  const handlePlanCta = async (plan: "advanced" | "pro_plus") => {
-    const token = getAuthToken();
-    if (!token) {
+  const handlePlanCta = (plan: CheckoutPlan) => {
+    if (!getAuthToken()) {
       router.push(planQuery(plan));
       return;
     }
@@ -152,49 +248,97 @@ export default function HomePage() {
     setShowCpfModal(true);
   };
 
+  const renderPlanButton = ({
+    plan,
+    label,
+    microcopy,
+    variant,
+    fullWidth = false,
+  }: {
+    plan: CheckoutPlan;
+    label: string;
+    microcopy: string;
+    variant: "primary" | "secondary";
+    fullWidth?: boolean;
+  }) => {
+    const loading = checkoutPlanLoading === plan;
+    const className =
+      variant === "primary"
+        ? "inline-flex min-h-14 items-center justify-center rounded-2xl bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#2563EB] px-6 py-4 text-center text-sm font-semibold text-white shadow-[0_14px_45px_rgba(124,58,237,0.38)] transition-all hover:-translate-y-0.5 hover:brightness-110"
+        : "inline-flex min-h-14 items-center justify-center rounded-2xl border border-[#3B82F6]/40 bg-[#0F172A] px-6 py-4 text-center text-sm font-semibold text-[#E5E7EB] shadow-[0_10px_30px_rgba(37,99,235,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#60A5FA] hover:bg-[#111C33]";
+
+    const wrapperClass = fullWidth ? "w-full" : "w-full sm:w-auto";
+
+    return (
+      <div className={wrapperClass}>
+        {isLoggedIn ? (
+          <button
+            type="button"
+            onClick={() => handlePlanCta(plan)}
+            disabled={loading}
+            className={`${className} ${fullWidth ? "w-full" : "w-full sm:w-auto"} disabled:cursor-not-allowed disabled:opacity-70`}
+          >
+            {loading ? "Redirecionando..." : label}
+          </button>
+        ) : (
+          <Link href={planQuery(plan)} className={`${className} ${fullWidth ? "w-full" : "w-full sm:w-auto"}`}>
+            {label}
+          </Link>
+        )}
+        <p className="mt-2 text-center text-xs text-[#94A3B8]">{microcopy}</p>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen text-[#E5E7EB] flex flex-col relative overflow-hidden">
+    <div className="relative flex min-h-screen flex-col overflow-hidden text-[#E5E7EB]">
       <div
         className="fixed inset-0 -z-10"
         style={{
-          background: "linear-gradient(165deg, #060B17 0%, #0B1224 100%)",
+          background:
+            "radial-gradient(circle at top, rgba(59,130,246,0.16), transparent 28%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.16), transparent 22%), linear-gradient(180deg, #050816 0%, #09101E 45%, #050816 100%)",
         }}
       />
       <div
-        className="fixed inset-0 -z-10 opacity-[0.04]"
+        className="fixed inset-0 -z-10 opacity-[0.05]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpath fill='%239CA3AF' d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage:
+            'linear-gradient(rgba(148,163,184,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.18) 1px, transparent 1px)',
+          backgroundSize: "70px 70px",
         }}
       />
-      <div className="fixed inset-0 -z-10 opacity-[0.03] pointer-events-none">
-        <div className="absolute bottom-0 left-1/4 w-32 h-48 border-l border-[#2563EB]/30 rounded-t" />
-        <div className="absolute bottom-0 right-1/3 w-24 h-36 border-l border-[#22C55E]/20 rounded-t" />
-        <div className="absolute top-1/3 right-1/4 w-20 h-28 border-l border-[#2563EB]/20 rounded-t" />
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-[8%] top-24 h-48 w-48 rounded-full bg-[#2563EB]/10 blur-3xl" />
+        <div className="absolute bottom-20 right-[6%] h-56 w-56 rounded-full bg-[#7C3AED]/10 blur-3xl" />
       </div>
 
       {showToast && <ToastInfo message={toastMessage} onDismiss={() => setShowToast(false)} />}
+
       {showCpfModal && pendingPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Identificação para pagamento</h3>
-            <p className="text-sm text-[#9CA3AF] mb-4">
-              O Asaas exige CPF ou CNPJ para gerar a cobrança. Você não precisará preencher de novo na página de pagamento.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-[#1F2937] bg-[#0B1220] p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[#F8FAFC]">Identificação para pagamento</h3>
+            <p className="mt-2 text-sm leading-6 text-[#94A3B8]">
+              Informe seu CPF para gerar a cobrança com PIX ou cartão sem precisar preencher novamente na próxima etapa.
             </p>
-            <label className="block mb-4">
-              <span className="block text-xs text-[#9CA3AF] mb-1">CPF</span>
+            <label className="mt-5 block">
+              <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-[#64748B]">CPF</span>
               <input
                 type="text"
                 value={formatCpf(cpfInput)}
                 onChange={(e) => setCpfInput(e.target.value)}
                 placeholder="000.000.000-00"
-                className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg px-3 py-2.5 text-sm text-[#E5E7EB] focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/30 focus:outline-none"
+                className="w-full rounded-2xl border border-[#1F2937] bg-[#111827] px-4 py-3 text-sm text-[#E5E7EB] outline-none transition-colors focus:border-[#3B82F6] focus:ring-2 focus:ring-[#2563EB]/20"
               />
             </label>
-            <div className="flex gap-3">
+            <div className="mt-5 flex gap-3">
               <button
                 type="button"
-                onClick={() => { setShowCpfModal(false); setPendingPlan(null); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] transition-colors"
+                onClick={() => {
+                  setShowCpfModal(false);
+                  setPendingPlan(null);
+                }}
+                className="flex-1 rounded-2xl border border-[#374151] bg-[#111827] px-4 py-3 text-sm font-medium text-[#E5E7EB] transition-colors hover:bg-[#1F2937]"
               >
                 Cancelar
               </button>
@@ -202,7 +346,7 @@ export default function HomePage() {
                 type="button"
                 onClick={handleConfirmCpfCheckout}
                 disabled={checkoutPlanLoading !== null}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] disabled:bg-[#1F2937] disabled:text-[#6B7280] text-white transition-colors"
+                className="flex-1 rounded-2xl bg-[#2563EB] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3B82F6] disabled:cursor-not-allowed disabled:bg-[#1F2937] disabled:text-[#6B7280]"
               >
                 {checkoutPlanLoading ? "Abrindo..." : "Continuar"}
               </button>
@@ -211,262 +355,638 @@ export default function HomePage() {
         </div>
       )}
 
-      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#1E293B]/80 shrink-0 bg-[#0B1224]/70 backdrop-blur-sm">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#2563EB]/20">
-            <span className="text-white font-bold text-sm">AA</span>
-          </div>
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">ARAGON ANALYTICS</h1>
-          </div>
-        </Link>
-        <div className="flex items-center gap-2">
-          {isLoggedIn ? (
-            <Link
-              href="/probabilisticas"
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-[#2563EB] hover:bg-[#3B82F6] text-white transition-colors"
+      <header className="sticky top-0 z-40 border-b border-[#1E293B]/80 bg-[#08101D]/80 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] text-sm font-bold text-white shadow-[0_10px_30px_rgba(37,99,235,0.35)]">
+              AR
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Sistema estratégico</p>
+              <h1 className="text-base font-semibold text-[#F8FAFC] sm:text-lg">Aragon</h1>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <a
+              href="#planos"
+              className="hidden rounded-xl border border-[#334155] px-4 py-2 text-sm font-medium text-[#CBD5E1] transition-colors hover:border-[#60A5FA] hover:text-white sm:inline-flex"
             >
-              Ir ao painel
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-[#1F2937] border border-[#374151] text-[#E5E7EB] hover:bg-[#374151] hover:border-[#4B5563] transition-colors"
-            >
-              Entrar
-            </Link>
-          )}
+              Ver planos
+            </a>
+            {isLoggedIn ? (
+              <button
+                type="button"
+                onClick={handleAcessarAragon}
+                className="rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3B82F6]"
+              >
+                Ir ao painel
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-xl border border-[#334155] bg-[#0F172A] px-4 py-2 text-sm font-medium text-[#E2E8F0] transition-colors hover:border-[#475569] hover:bg-[#111827]"
+              >
+                Entrar
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="flex-1">
-        {/* Hero premium com preview do sistema */}
-        <section className="px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+        <section className="px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:pb-24">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
             <div>
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#E5E7EB] tracking-tight leading-tight">
-                Descubra quais ativos realmente funcionam
+              <span className="inline-flex rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#93C5FD]">
+                Feito para tráfego frio entender rápido
+              </span>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {strategyItems.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-[#1E293B] bg-[#0F172A]/90 px-3 py-2 text-xs font-medium text-[#CBD5E1]"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              <h2 className="mt-6 max-w-3xl text-4xl font-black tracking-tight text-[#F8FAFC] sm:text-5xl lg:text-6xl">
+                Catalogue estratégias probabilísticas e encontre oportunidades com muito mais velocidade.
               </h2>
-              <p className="text-[#94A3B8] text-lg sm:text-xl mt-5">
-                Ranking probabilístico baseado em ciclos reais de mercado, para você decidir com dados e não com achismo.
+
+              <p className="mt-5 max-w-2xl text-base leading-7 text-[#94A3B8] sm:text-lg">
+                O Aragon analisa dados históricos, organiza estratégias como MHI, 3 Mosqueteiros e Padrão 23 e mostra
+                uma leitura prática para você parar de depender de análise manual.
               </p>
-              <ul className="mt-7 space-y-3 text-[#CBD5E1] text-sm sm:text-base">
-                <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Leitura objetiva dos ativos com melhor desempenho</li>
-                <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Mais consistência na escolha das operações</li>
-                <li className="flex items-start gap-2"><span className="text-[#60A5FA]">•</span>Interface direta para agir rápido no mercado</li>
-              </ul>
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <button
-                  type="button"
-                  onClick={handleAcessarAragon}
-                  className="min-w-[250px] px-8 py-4 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_0_32px_rgba(79,70,229,0.35)] hover:brightness-110 hover:shadow-[0_0_42px_rgba(37,99,235,0.5)]"
-                >
-                  Acessar Aragon
-                </button>
-                <a
-                  href="#planos"
-                  className="min-w-[210px] px-8 py-4 rounded-xl text-sm font-semibold border border-[#3B82F6]/60 text-[#E5E7EB] hover:bg-[#1E293B]/60 transition-colors text-center"
-                >
-                  Ver planos
-                </a>
+
+              <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-[#1E293B] bg-[#0B1220]/90 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#64748B]">Plano mensal</p>
+                  <p className="mt-2 text-2xl font-bold text-[#F8FAFC]">R$47,90</p>
+                  <p className="mt-1 text-xs text-[#94A3B8]">Assinatura para entrar rápido.</p>
+                </div>
+                <div className="rounded-2xl border border-[#7C3AED]/40 bg-[#140F25]/90 p-4 shadow-[0_0_30px_rgba(124,58,237,0.18)]">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#C4B5FD]">Plano vitalício</p>
+                  <p className="mt-2 text-2xl font-bold text-[#F8FAFC]">R$199</p>
+                  <p className="mt-1 text-xs text-[#C4B5FD]">Pagamento único.</p>
+                </div>
+                <div className="rounded-2xl border border-[#22C55E]/30 bg-[#08150E]/90 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#86EFAC]">Benefício futuro</p>
+                  <p className="mt-2 text-sm font-semibold text-[#F8FAFC]">Robô incluído</p>
+                  <p className="mt-1 text-xs text-[#94A3B8]">No plano vitalício quando for liberado.</p>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-4 sm:max-w-xl sm:grid-cols-2">
+                {renderPlanButton({
+                  plan: "advanced",
+                  label: "Assinar agora",
+                  microcopy: "Acesso rápido e liberação após confirmação.",
+                  variant: "secondary",
+                })}
+                {renderPlanButton({
+                  plan: "pro_plus",
+                  label: "Quero acesso vitalício",
+                  microcopy: "Plano vitalício com benefício futuro do robô.",
+                  variant: "primary",
+                })}
+              </div>
+
+              <div className="mt-6 grid gap-3 text-sm text-[#CBD5E1] sm:max-w-2xl sm:grid-cols-2">
+                <div className="flex items-start gap-3 rounded-2xl border border-[#1E293B] bg-[#0B1220]/80 px-4 py-3">
+                  <span className="mt-0.5 text-[#60A5FA]">•</span>
+                  <p>Entenda o produto em segundos, mesmo sem conhecer catalogação.</p>
+                </div>
+                <div className="flex items-start gap-3 rounded-2xl border border-[#1E293B] bg-[#0B1220]/80 px-4 py-3">
+                  <span className="mt-0.5 text-[#60A5FA]">•</span>
+                  <p>Veja rapidamente quais estratégias e cenários merecem sua atenção.</p>
+                </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#2563EB]/35 bg-[#0F172A]/85 p-4 sm:p-5 shadow-[0_0_38px_rgba(37,99,235,0.2)] backdrop-blur-sm">
-              <div className="rounded-xl border border-[#1E293B] bg-[#0B1224] p-4 sm:p-5 min-h-[280px] sm:min-h-[340px] flex flex-col">
-                <div className="flex items-center justify-between text-xs text-[#94A3B8] mb-4">
-                  <span>Preview da plataforma</span>
-                  <span className="px-2 py-1 rounded-full bg-[#2563EB]/20 text-[#93C5FD]">Live Ranking</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="rounded-lg bg-[#0F172A] border border-[#1E293B] p-3">
-                    <p className="text-xs text-[#94A3B8]">Top ativo</p>
-                    <p className="text-sm font-semibold text-[#22C55E] mt-1">{summary?.top_asset?.label ?? "EURUSD-OTC"}</p>
+            <div className="relative">
+              <div className="absolute -left-4 top-10 hidden h-28 w-28 rounded-full bg-[#2563EB]/20 blur-3xl sm:block" />
+              <div className="absolute -right-4 bottom-10 hidden h-32 w-32 rounded-full bg-[#7C3AED]/20 blur-3xl sm:block" />
+
+              <div className="relative overflow-hidden rounded-[28px] border border-[#1E293B] bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(9,16,30,0.92))] p-4 shadow-[0_20px_70px_rgba(2,6,23,0.65)] sm:p-6">
+                <div className="flex items-center justify-between border-b border-[#1E293B] pb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Preview da plataforma</p>
+                    <p className="mt-1 text-sm font-semibold text-[#F8FAFC]">Espaço preparado para prints reais</p>
                   </div>
-                  <div className="rounded-lg bg-[#0F172A] border border-[#1E293B] p-3">
-                    <p className="text-xs text-[#94A3B8]">Win rate</p>
-                    <p className="text-sm font-semibold text-[#E5E7EB] mt-1">
-                      {summary?.top_asset?.win_rate_pct != null ? `${summary.top_asset.win_rate_pct}%` : "71.8%"}
+                  <span className="rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-3 py-1 text-[11px] font-semibold text-[#86EFAC]">
+                    Visual premium
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-[1.3fr_0.7fr]">
+                  <div className="rounded-3xl border border-dashed border-[#334155] bg-[linear-gradient(180deg,rgba(17,24,39,0.95),rgba(15,23,42,0.9))] p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-[#64748B]">Print principal</p>
+                        <p className="mt-1 text-base font-semibold text-[#F8FAFC]">Dashboard de catalogação</p>
+                      </div>
+                      <span className="rounded-full bg-[#1D4ED8]/20 px-3 py-1 text-[11px] font-medium text-[#93C5FD]">
+                        MHI | 3 Mosqueteiros | Padrão 23
+                      </span>
+                    </div>
+
+                    <div className="mt-5 overflow-hidden rounded-2xl border border-[#334155] bg-[#020617]/70">
+                      <div className="relative aspect-[16/10] w-full">
+                        <img
+                          src="/media/aragon-catalogando.gif"
+                          alt="Demonstração do Aragon catalogando e entregando os dados após o login"
+                          className="h-full w-full object-cover object-top"
+                        />
+                      </div>
+                      <div className="border-t border-[#1E293B] bg-[#08101D]/95 px-4 py-4">
+                        <p className="text-sm font-semibold text-[#F8FAFC]">Só fazer login e o sistema já entrega os dados</p>
+                        <p className="mt-1 text-sm leading-6 text-[#94A3B8]">
+                          Essa prova visual ajuda a mostrar rapidez, praticidade e clareza logo na primeira dobra.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-[#1E293B] bg-[#0B1220]/90 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#64748B]">O que o usuário vê</p>
+                      <div className="mt-4 space-y-3">
+                        <div className="rounded-2xl border border-[#1F2937] bg-[#111827] p-3">
+                          <p className="text-xs text-[#94A3B8]">Estratégia em foco</p>
+                          <p className="mt-1 font-semibold text-[#F8FAFC]">MHI</p>
+                        </div>
+                        <div className="rounded-2xl border border-[#1F2937] bg-[#111827] p-3">
+                          <p className="text-xs text-[#94A3B8]">Leitura rápida</p>
+                          <p className="mt-1 font-semibold text-[#22C55E]">
+                            {summary?.top_asset?.win_rate_pct ? `${summary.top_asset.win_rate_pct}%` : "Histórico organizado"}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-[#1F2937] bg-[#111827] p-3">
+                          <p className="text-xs text-[#94A3B8]">Objetivo</p>
+                          <p className="mt-1 font-semibold text-[#F8FAFC]">Decidir com mais clareza</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[#7C3AED]/35 bg-[#140F25]/80 p-4 shadow-[0_0_30px_rgba(124,58,237,0.15)]">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Oferta em destaque</p>
+                      <p className="mt-2 text-lg font-bold text-white">Vitalício R$199</p>
+                      <p className="mt-2 text-sm leading-6 text-[#DDD6FE]">
+                        Inclui acesso ao robô futuramente quando for liberado.
+                      </p>
+                      <a
+                        href="#planos"
+                        className="mt-4 inline-flex rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#E5E7EB]"
+                      >
+                        Comparar planos
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-[#1E293B]/80 px-4 py-12 sm:px-6">
+          <div className="mx-auto max-w-7xl">
+            <SocialProofCards summary={summary} />
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Como funciona"
+              title="Menos análise manual. Mais leitura pronta para agir."
+              description="O Aragon foi pensado para simplificar a catalogação de estratégias probabilísticas e acelerar a sua leitura do mercado."
+            />
+
+            <div className="mt-12 grid gap-5 lg:grid-cols-4">
+              {[
+                {
+                  step: "01",
+                  title: "O sistema analisa dados históricos",
+                  description: "Você parte de uma base já processada, sem precisar começar do zero.",
+                },
+                {
+                  step: "02",
+                  title: "Encontra padrões e estratégias probabilísticas",
+                  description: "O foco é mostrar cenários que podem fazer sentido para sua leitura operacional.",
+                },
+                {
+                  step: "03",
+                  title: "Organiza as melhores oportunidades",
+                  description: "As informações chegam de forma visual para facilitar comparação e decisão.",
+                },
+                {
+                  step: "04",
+                  title: "Economiza tempo no operacional",
+                  description: "Menos tempo filtrando manualmente e mais praticidade para operar com método.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className="rounded-3xl border border-[#1E293B] bg-[#0F172A]/80 p-6 shadow-[0_10px_30px_rgba(2,6,23,0.35)]"
+                >
+                  <span className="inline-flex rounded-2xl bg-[#2563EB]/15 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-[#93C5FD]">
+                    {item.step}
+                  </span>
+                  <h3 className="mt-5 text-lg font-semibold text-[#F8FAFC]">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#94A3B8]">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Comparativo"
+              title="Catalogar manualmente toma tempo e ainda pode levar você para um ativo fraco"
+              description="Antes de chegar em uma leitura útil, muita gente perde vários minutos olhando tela, marcando referências e ainda corre o risco de terminar com uma entrada de baixa assertividade."
+            />
+
+            <div className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="overflow-hidden rounded-[28px] border border-[#7F1D1D]/40 bg-[linear-gradient(180deg,rgba(34,8,8,0.92),rgba(12,10,18,0.96))] shadow-[0_20px_60px_rgba(127,29,29,0.18)]">
+                <div className="border-b border-[#7F1D1D]/30 p-5">
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#FCA5A5]">Manual</p>
+                  <h3 className="mt-2 text-xl font-bold text-white">Mais tempo gasto, mais esforço e mais incerteza</h3>
+                </div>
+
+                <div className="p-5">
+                  <div className="overflow-hidden rounded-3xl border border-[#7F1D1D]/30">
+                    <img
+                      src="/media/catalogacao-manual.png"
+                      alt="Exemplo de catalogação manual em gráfico, exigindo tempo e esforço visual"
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-[#7F1D1D]/30 bg-[#1F1113]/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#FCA5A5]">Tempo</p>
+                      <p className="mt-2 text-sm font-semibold text-white">Cerca de 10 minutos</p>
+                    </div>
+                    <div className="rounded-2xl border border-[#7F1D1D]/30 bg-[#1F1113]/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#FCA5A5]">Operacional</p>
+                      <p className="mt-2 text-sm font-semibold text-white">Leitura cansativa e manual</p>
+                    </div>
+                    <div className="rounded-2xl border border-[#7F1D1D]/30 bg-[#1F1113]/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#FCA5A5]">Risco</p>
+                      <p className="mt-2 text-sm font-semibold text-white">Ativo pode seguir fraco</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-5 text-sm leading-7 text-[#FECACA]">
+                    Fazer isso manualmente consome tempo, exige atenção total na tela e mesmo assim pode terminar em um
+                    ativo com baixa assertividade.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-[#1E293B] bg-[linear-gradient(180deg,rgba(9,16,30,0.96),rgba(15,23,42,0.92))] p-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-8">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#93C5FD]">Com Aragon</p>
+                <h3 className="mt-3 text-3xl font-bold tracking-tight text-[#F8FAFC] sm:text-4xl">
+                  Você reduz esse trabalho e recebe a leitura pronta muito mais rápido
+                </h3>
+                <p className="mt-4 text-sm leading-7 text-[#94A3B8] sm:text-base">
+                  Em vez de perder tempo catalogando na mão, o Aragon organiza os dados históricos, mostra estratégias
+                  probabilísticas e ajuda você a chegar mais rápido no que realmente vale sua atenção.
+                </p>
+
+                <div className="mt-6 space-y-3">
+                  {[
+                    "Menos tempo preso em análise manual",
+                    "Mais clareza para filtrar oportunidades",
+                    "Leitura prática logo após entrar no sistema",
+                    "Mais organização para operar com método",
+                  ].map((item) => (
+                    <div key={item} className="flex items-start gap-3 rounded-2xl border border-[#1E293B] bg-[#0B1220]/80 px-4 py-3">
+                      <span className="mt-0.5 text-[#22C55E]">✓</span>
+                      <p className="text-sm text-[#E2E8F0]">{item}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 rounded-3xl border border-[#2563EB]/30 bg-[#0B1220]/90 p-5">
+                  <p className="text-sm font-semibold text-[#F8FAFC]">
+                    O objetivo não é prometer mágica. É tirar peso do operacional e acelerar sua análise.
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#94A3B8]">
+                    Para tráfego frio, esse contraste deixa claro o ganho de praticidade: menos esforço manual e mais
+                    organização em segundos.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Benefícios"
+              title="Tudo o que a landing precisa destacar para facilitar a decisão"
+              description="Texto curto, benefício claro e foco em praticidade para quem veio do Instagram e precisa entender rápido o valor do sistema."
+            />
+
+            <div className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {benefitItems.map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-3xl border border-[#1E293B] bg-[#0B1220]/85 p-6 shadow-[0_8px_28px_rgba(2,6,23,0.28)]"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1D4ED8]/30 to-[#7C3AED]/30 text-lg text-[#BFDBFE]">
+                    +
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-[#F8FAFC]">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#94A3B8]">{item.description}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 flex justify-center">
+              <div className="w-full max-w-3xl rounded-[28px] border border-[#1E293B] bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(8,15,30,0.95))] p-6 text-center shadow-[0_20px_60px_rgba(2,6,23,0.45)] sm:p-8">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">CTA intermediário</p>
+                <h3 className="mt-3 text-2xl font-bold text-[#F8FAFC] sm:text-3xl">
+                  Entre agora no plano mensal ou garanta o vitalício com benefício futuro.
+                </h3>
+                <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#94A3B8] sm:text-base">
+                  Se você quer começar rápido, o plano mensal resolve. Se quer maximizar a oportunidade, o vitalício é o
+                  destaque principal da oferta.
+                </p>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {renderPlanButton({
+                    plan: "advanced",
+                    label: "Assinar agora",
+                    microcopy: "Acesso rápido com liberação após confirmação.",
+                    variant: "secondary",
+                    fullWidth: true,
+                  })}
+                  {renderPlanButton({
+                    plan: "pro_plus",
+                    label: "Quero acesso vitalício",
+                    microcopy: "Plano vitalício com benefício futuro incluso.",
+                    variant: "primary",
+                    fullWidth: true,
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Provas visuais"
+              title="Galeria pronta para receber prints reais do sistema"
+              description="A estrutura abaixo já deixa os prints em destaque com visual premium, reforçando percepção de valor e confiança na ferramenta."
+            />
+
+            <div className="mt-12 grid gap-5 lg:grid-cols-3">
+              {proofItems.map((item) => (
+                <div
+                  key={item.title}
+                  className="overflow-hidden rounded-[28px] border border-[#1E293B] bg-[#0B1220]/85 shadow-[0_20px_50px_rgba(2,6,23,0.4)]"
+                >
+                  <div className="border-b border-[#1E293B] p-5">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">{item.eyebrow}</p>
+                    <h3 className="mt-2 text-lg font-semibold text-[#F8FAFC]">{item.title}</h3>
+                  </div>
+                  <div className="p-5">
+                    {item.image ? (
+                      <div className="overflow-hidden rounded-3xl border border-[#334155] bg-[linear-gradient(180deg,rgba(2,6,23,0.8),rgba(15,23,42,0.75))]">
+                        <div className="relative aspect-[16/10] w-full">
+                          <img src={item.image} alt={item.title} className="h-full w-full object-cover object-top" />
+                        </div>
+                        <div className="border-t border-[#1E293B] bg-[#08101D]/95 px-4 py-4">
+                          <p className="text-sm leading-6 text-[#94A3B8]">{item.caption}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid min-h-[250px] place-items-center rounded-3xl border border-dashed border-[#334155] bg-[linear-gradient(180deg,rgba(2,6,23,0.8),rgba(15,23,42,0.75))] px-6 text-center">
+                        <div>
+                          <p className="text-sm font-semibold text-[#F8FAFC]">Adicionar screenshot aqui</p>
+                          <p className="mt-2 text-sm leading-6 text-[#94A3B8]">{item.caption}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Estratégias"
+              title="Um sistema pensado para catalogar estratégias probabilísticas com clareza"
+              description="Mostre de forma simples que o usuário encontra dentro do Aragon as leituras mais procuradas por quem opera opções binárias."
+            />
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  name: "MHI",
+                  text: "Leitura organizada para quem busca velocidade na identificação de oportunidades.",
+                },
+                {
+                  name: "3 Mosqueteiros",
+                  text: "Estratégia apresentada com leitura visual para facilitar a comparação no histórico.",
+                },
+                {
+                  name: "Padrão 23",
+                  text: "Mais uma abordagem estratégica centralizada dentro do mesmo ambiente.",
+                },
+                {
+                  name: "Outras probabilísticas",
+                  text: "A plataforma foi preparada para concentrar diferentes estratégias em uma rotina prática.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.name}
+                  className="rounded-3xl border border-[#1E293B] bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(11,18,32,0.92))] p-6"
+                >
+                  <div className="inline-flex rounded-full border border-[#2563EB]/30 bg-[#2563EB]/10 px-3 py-1 text-xs font-semibold text-[#93C5FD]">
+                    Estratégia
+                  </div>
+                  <h3 className="mt-4 text-2xl font-bold text-[#F8FAFC]">{item.name}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#94A3B8]">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="planos" className="scroll-mt-24 border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <SectionHeading
+              eyebrow="Planos"
+              title="Escolha como quer entrar no Aragon"
+              description="Os dois planos entregam acesso ao sistema. O vitalício recebe o maior destaque por reunir a melhor oportunidade da oferta."
+            />
+
+            <div className="mt-12 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="rounded-[28px] border border-[#1E293B] bg-[#0B1220]/90 p-6 sm:p-8">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Plano mensal</p>
+                <h3 className="mt-3 text-3xl font-bold text-[#F8FAFC]">R$47,90</h3>
+                <p className="mt-2 text-sm text-[#94A3B8]">Assinatura para começar rápido e acessar a plataforma agora.</p>
+
+                <ul className="mt-6 space-y-3 text-sm text-[#CBD5E1]">
+                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Acesso ao sistema de catalogação</span></li>
+                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Estratégias probabilísticas organizadas</span></li>
+                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Análise histórica prática para leitura rápida</span></li>
+                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Ideal para quem quer testar e entrar hoje</span></li>
+                </ul>
+
+                <div className="mt-8">
+                  {renderPlanButton({
+                    plan: "advanced",
+                    label: "Assinar agora",
+                    microcopy: "Acesso rápido e liberação após confirmação.",
+                    variant: "secondary",
+                    fullWidth: true,
+                  })}
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-[32px] border border-[#7C3AED]/40 bg-[linear-gradient(180deg,rgba(31,14,58,0.95),rgba(9,16,30,0.96))] p-6 shadow-[0_25px_70px_rgba(124,58,237,0.28)] sm:p-8">
+                <div className="absolute right-5 top-5 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#111827]">
+                  Mais escolhido
+                </div>
+
+                <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Plano vitalício</p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h3 className="text-4xl font-black text-white">R$199</h3>
+                    <p className="mt-2 text-sm text-[#DDD6FE]">Pagamento único com o melhor custo de entrada da oferta.</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#22C55E]/30 bg-[#08150E]/80 px-4 py-3 text-sm text-[#D1FAE5]">
+                    Inclui acesso ao robô futuramente
+                  </div>
+                </div>
+
+                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Inclui</p>
+                    <p className="mt-2 text-sm leading-6 text-white">Acesso vitalício ao sistema sem renovação mensal.</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Diferencial</p>
+                    <p className="mt-2 text-sm leading-6 text-white">
+                      Melhor oportunidade para quem já quer entrar com visão de longo prazo.
                     </p>
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="rounded-xl border border-[#1F2937] bg-[#111827] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="font-semibold text-sm text-[#E5E7EB]">USD/JPY</span>
-                      <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-[#374151] text-[#94A3B8]">OTC</span>
-                    </div>
-                    <p className="text-[11px] text-[#9CA3AF] mb-1.5">MILHÃO MINORIA</p>
-                    <div className="text-xl font-bold text-[#22C55E] mb-1">90.9%</div>
-                    <p className="text-[10px] text-[#9CA3AF] mb-2">22 ciclos — 20 win / 2 hit</p>
-                    <div className="flex flex-wrap gap-1.5 mb-3 text-[10px]">
-                      <span className="px-1.5 py-0.5 rounded bg-[#1E3A5F]/60 text-[#93C5FD]">P 17</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#2E1F4F]/60 text-[#A78BFA]">G1 3</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#3F1F1F]/60 text-[#F87171]">H 2</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link
-                        href={isLoggedIn ? "/probabilisticas" : "/login"}
-                        className="flex-1 py-2 rounded-lg text-[11px] font-medium text-center bg-[#1E293B] border border-[#334155] text-[#94A3B8] hover:bg-[#334155] hover:text-[#F1F5F9] transition-colors"
-                      >
-                        Ver ciclos
-                      </Link>
-                      <Link
-                        href={isLoggedIn ? "/probabilisticas" : "/login"}
-                        className="flex-1 py-2 rounded-lg text-[11px] font-medium text-center bg-[#2563EB]/20 text-[#3B82F6] border border-[#2563EB]/40 hover:bg-[#2563EB]/30 transition-colors"
-                      >
-                        Ver detalhes
-                      </Link>
-                    </div>
-                    <p className="text-[10px] text-[#6B7280] mt-3 text-center">Preview do dashboard</p>
-                  </div>
+
+                <ul className="mt-8 space-y-3 text-sm text-[#F5F3FF]">
+                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Tudo do plano mensal</span></li>
+                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Acesso vitalício sem renovação</span></li>
+                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Benefício futuro do robô quando for liberado</span></li>
+                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Oferta com maior percepção de valor para tráfego frio</span></li>
+                </ul>
+
+                <div className="mt-8">
+                  {renderPlanButton({
+                    plan: "pro_plus",
+                    label: "Quero acesso vitalício",
+                    microcopy: "Plano vitalício com benefício futuro e pagamento único.",
+                    variant: "primary",
+                    fullWidth: true,
+                  })}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Prova / Trust */}
-        <section className="px-4 sm:px-6 py-12 sm:py-16 border-t border-[#1E293B]/80">
-          <div className="max-w-6xl mx-auto rounded-2xl border border-[#2563EB]/35 shadow-[0_0_34px_rgba(37,99,235,0.18)] p-5 sm:p-7 bg-[#0B1224]/30">
-            <TrustCards summary={summary} />
-          </div>
-        </section>
+        <section className="border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-5xl">
+            <SectionHeading
+              eyebrow="FAQ"
+              title="Respostas rápidas para remover objeções"
+              description="A ideia aqui é reduzir atrito, responder dúvidas comuns e deixar o usuário seguro para avançar na assinatura."
+            />
 
-        {/* Como funciona */}
-        <section className="px-4 sm:px-6 py-16 sm:py-24 border-t border-[#1E293B]/80">
-          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-14">Como funciona</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 max-w-5xl mx-auto">
-            <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
-              <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">
-                <span className="text-[#60A5FA] font-bold text-3xl">1</span>
-              </div>
-              <h4 className="font-semibold text-[#E5E7EB] mb-2">Escolha estratégia e timeframe</h4>
-              <p className="text-sm text-[#94A3B8]">Selecione MHI, MILHÃO MINORIA, 3 Mosqueteiros ou outra estratégia e a janela (2h, 4h, 24h).</p>
-            </div>
-            <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
-              <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">
-                <span className="text-[#60A5FA] font-bold text-3xl">2</span>
-              </div>
-              <h4 className="font-semibold text-[#E5E7EB] mb-2">Catalogamos histórico e ciclos</h4>
-              <p className="text-sm text-[#94A3B8]">O motor processa candles e classifica cada ciclo (P, G1, H) por ativo.</p>
-            </div>
-            <div className="rounded-2xl p-8 sm:p-9 bg-[#0F172A] border border-[#1E293B] text-center backdrop-blur-sm">
-              <div className="w-20 h-20 rounded-2xl bg-[#2563EB]/25 flex items-center justify-center mx-auto mb-7">
-                <span className="text-[#60A5FA] font-bold text-3xl">3</span>
-              </div>
-              <h4 className="font-semibold text-[#E5E7EB] mb-2">Ranking e consistência por ativo</h4>
-              <p className="text-sm text-[#94A3B8]">Você vê os ativos mais assertivos e pode filtrar por min ciclos e Top N.</p>
+            <div className="mt-12 space-y-4">
+              {faqItems.map((item) => (
+                <div key={item.question} className="rounded-3xl border border-[#1E293B] bg-[#0B1220]/90 p-6">
+                  <h3 className="text-lg font-semibold text-[#F8FAFC]">{item.question}</h3>
+                  <p className="mt-3 text-sm leading-7 text-[#94A3B8]">{item.answer}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Diferencial */}
-        <section className="px-4 sm:px-6 py-14 sm:py-16 border-t border-[#1E293B]/80">
-          <div className="max-w-4xl mx-auto rounded-2xl bg-[#0F172A] border border-[#1E293B] p-6 sm:p-8">
-            <h3 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] mb-4">Pare de escolher ativos no achismo</h3>
-            <p className="text-[#94A3B8] text-sm sm:text-base leading-relaxed">
-              O Aragon transforma dados de mercado em um ranking claro de desempenho por ativo. Em vez de operar no escuro,
-              você enxerga quais cenários têm maior consistência e direciona suas decisões para o que realmente entrega resultado.
+        <section className="border-t border-[#1E293B]/80 px-4 py-16 sm:px-6 sm:py-24">
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-[32px] border border-[#1E293B] bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(7,12,24,1))] p-6 text-center shadow-[0_25px_70px_rgba(2,6,23,0.55)] sm:p-10">
+            <span className="inline-flex rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#C4B5FD]">
+              CTA final
+            </span>
+            <h2 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl">
+              Tenha acesso a um sistema focado em catalogação estratégica e leitura prática do operacional.
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-[#94A3B8] sm:text-base">
+              Se a sua prioridade é praticidade, organização e rapidez para encontrar oportunidades, o Aragon foi feito
+              para isso. E se você quer a melhor relação entre valor e benefício futuro, o vitalício é a escolha mais forte.
             </p>
-          </div>
-        </section>
 
-        {/* Planos */}
-        <section id="planos" className="px-4 sm:px-6 py-14 sm:py-18 border-t border-[#1E293B]/80 scroll-mt-6">
-          <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] text-center mb-2">Planos</h3>
-          <p className="text-center text-[#94A3B8] text-sm mb-10">Pagamento via PIX ou cartão (Asaas)</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* AVANÇADO - Popular com glow */}
-            <div className="rounded-2xl p-6 bg-[#111827]/90 flex flex-col relative backdrop-blur-sm border-2 border-[#2563EB]/60 shadow-[0_0_24px_rgba(37,99,235,0.15)]">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#2563EB] text-white text-xs font-semibold shadow-lg">
-                Popular
-              </div>
-              <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">AVANÇADO</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">Assinatura mensal · Renovação automática</p>
-              <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Ranking + filtros</li>
-              </ul>
-              {isLoggedIn ? (
-                <button
-                  type="button"
-                  onClick={() => handlePlanCta("advanced")}
-                  disabled={checkoutPlanLoading === "advanced"}
-                  className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
-                >
-                  {checkoutPlanLoading === "advanced" ? "Redirecionando..." : "Assinar Avançado · R$ 47,90/mês"}
-                </button>
-              ) : (
-                <Link
-                  href={planQuery("advanced")}
-                  className="block w-full py-3 rounded-xl text-sm font-semibold text-center text-white transition-all bg-gradient-to-r from-[#4F46E5] to-[#2563EB] shadow-[0_10px_28px_rgba(37,99,235,0.38)] hover:scale-[1.02] hover:shadow-[0_14px_34px_rgba(37,99,235,0.48)]"
-                >
-                  Assinar Avançado · R$ 47,90/mês
-                </Link>
-              )}
-            </div>
-
-            {/* PRO+ Vitalício */}
-            <div className="rounded-2xl p-6 bg-[#0F172A] border border-[#1E293B] flex flex-col backdrop-blur-sm">
-              <h4 className="text-lg font-semibold text-[#E5E7EB] mb-1">PRO+ VITALÍCIO</h4>
-              <p className="text-[#9CA3AF] text-sm mb-4">Pagamento único · Pode parcelar no cartão</p>
-              <ul className="space-y-3 text-sm text-[#D1D5DB] mb-6 flex-1">
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todas as estratégias</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Todos os ativos</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Atualizações premium</li>
-                <li className="flex items-center gap-2"><span className="text-[#22C55E] font-bold">✓</span> Acesso futuro ao robô por 2 semanas</li>
-              </ul>
-              {isLoggedIn ? (
-                <button
-                  type="button"
-                  onClick={() => handlePlanCta("pro_plus")}
-                  disabled={checkoutPlanLoading === "pro_plus"}
-                  className="w-full py-3 rounded-xl text-sm font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
-                >
-                  {checkoutPlanLoading === "pro_plus" ? "Redirecionando..." : "Assinar PRO+ Vitalício R$ 199"}
-                </button>
-              ) : (
-                <Link
-                  href={planQuery("pro_plus")}
-                  className="block w-full py-3 rounded-xl text-sm font-semibold text-center bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-all shadow-lg shadow-[#7C3AED]/20 hover:shadow-xl hover:shadow-[#7C3AED]/30"
-                >
-                  Assinar PRO+ Vitalício R$ 199
-                </Link>
-              )}
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              {renderPlanButton({
+                plan: "advanced",
+                label: "Assinar agora",
+                microcopy: "Acesso rápido com liberação após confirmação.",
+                variant: "secondary",
+                fullWidth: true,
+              })}
+              {renderPlanButton({
+                plan: "pro_plus",
+                label: "Quero acesso vitalício",
+                microcopy: "Plano vitalício com benefício futuro do robô.",
+                variant: "primary",
+                fullWidth: true,
+              })}
             </div>
           </div>
         </section>
-
-        {/* Roadmap */}
-        <section className="px-4 sm:px-6 py-14 sm:py-16 border-t border-[#1E293B]/80">
-          <div className="max-w-4xl mx-auto rounded-2xl bg-[#0F172A] border border-[#1E293B] p-6 sm:p-8">
-            <h3 className="text-xl sm:text-2xl font-semibold text-[#E5E7EB] mb-5">O que vem por aí</h3>
-            <ul className="space-y-3 text-[#94A3B8] text-sm sm:text-base">
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Alertas inteligentes de mudança de ranking em tempo real</li>
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Comparador avançado entre estratégias e janelas de operação</li>
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Execução assistida com automações e recursos premium no painel</li>
-              <li className="flex items-start gap-2"><span className="text-[#60A5FA] mt-0.5">•</span>Histórico pessoal de performance com insights de melhoria</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="px-4 sm:px-6 py-10 border-t border-[#1E293B]/80">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#94A3B8]">
-            <p>ARAGON ANALYTICS</p>
-            <p className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
-              <a href="#" className="hover:text-[#E5E7EB] transition-colors">Termos</a>
-              <span>•</span>
-              <a href="#" className="hover:text-[#E5E7EB] transition-colors">Privacidade</a>
-              <span>•</span>
-              <span>Contato:</span>
-              <a href="https://t.me/aragoncatalogador" target="_blank" rel="noopener noreferrer" className="hover:text-[#E5E7EB] transition-colors text-[#60A5FA]">Telegram @aragoncatalogador</a>
-            </p>
-          </div>
-        </footer>
       </main>
+
+      <footer className="border-t border-[#1E293B]/80 px-4 py-10 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 text-center text-sm text-[#94A3B8] sm:flex-row sm:text-left">
+          <div>
+            <p className="font-semibold text-[#E2E8F0]">Aragon</p>
+            <p className="mt-1">Catalogação estratégica para opções binárias.</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
+            <a href="#" className="transition-colors hover:text-[#E5E7EB]">
+              Termos
+            </a>
+            <span>•</span>
+            <a href="#" className="transition-colors hover:text-[#E5E7EB]">
+              Privacidade
+            </a>
+            <span>•</span>
+            <a
+              href="https://t.me/aragoncatalogador"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#60A5FA] transition-colors hover:text-[#93C5FD]"
+            >
+              Telegram @aragoncatalogador
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

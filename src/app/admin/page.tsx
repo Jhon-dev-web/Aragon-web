@@ -1,6 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+/**
+ * Proteção da rota /admin (por que só client-side):
+ *
+ * - Autenticação do projeto usa JWT em localStorage (AuthStore) + estado em memória.
+ * - Middleware e Server Components não têm acesso a localStorage nem ao contexto React.
+ * - O servidor nunca recebe o token nas requisições de navegação (HTML), só nas chamadas
+ *   de API (Authorization header enviado pelo cliente). Por isso não é possível validar
+ *   sessão ou role no server para esta rota sem mudar o modelo de auth (ex.: cookie HttpOnly).
+ * - A proteção é feita no cliente: checagem isAdmin (user?.role === "admin") e redirect
+ *   antes de qualquer chamada a endpoints admin. O backend também exige role + ADMIN_EMAIL.
+ * - isAdmin no frontend é apenas para exibição (link Admin) e redirecionamento; a camada
+ *   final de autorização é sempre o backend (401/403 nas rotas /admin/*).
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -23,9 +37,15 @@ function fmtDate(value?: string | null): string {
   return d.toLocaleString("pt-BR");
 }
 
+/**
+ * Fluxo de carregamento:
+ * 1. loading (auth) → só "Carregando...", nenhuma chamada admin.
+ * 2. Auth pronta e (sem user ou !isAdmin) → redirect sem carregar dados.
+ * 3. Auth pronta, user e isAdmin → permitido carregar; aí sim dispara loadData uma vez.
+ */
 export default function AdminPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const [adminKey, setAdminKey] = useState("");
   const [codes, setCodes] = useState<AdminPromoCode[]>([]);
   const [users, setUsers] = useState<AdminUserItem[]>([]);
@@ -35,6 +55,7 @@ export default function AdminPage() {
   const [durationDays, setDurationDays] = useState(7);
   const [maxRedemptions, setMaxRedemptions] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const adminDataLoadStarted = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -42,12 +63,17 @@ export default function AdminPage() {
     if (saved) setAdminKey(saved);
   }, []);
 
+  // 1) Validação primeiro: redirect se não autenticado ou não admin. Nenhum dado admin é pedido aqui.
   useEffect(() => {
     if (loading) return;
     if (!user && !getAuthToken()) {
       router.replace("/login");
+      return;
     }
-  }, [loading, user, router]);
+    if (user && !isAdmin) {
+      router.replace("/probabilisticas");
+    }
+  }, [loading, user, isAdmin, router]);
 
   const loadData = useCallback(async () => {
     try {
@@ -66,10 +92,12 @@ export default function AdminPage() {
     }
   }, [adminKey]);
 
+  // 2) Só depois da validação: carregar dados admin uma vez quando user + isAdmin estão confirmados.
   useEffect(() => {
-    if (!user) return;
+    if (loading || !user || !isAdmin || adminDataLoadStarted.current) return;
+    adminDataLoadStarted.current = true;
     loadData();
-  }, [user, loadData]);
+  }, [loading, user, isAdmin, loadData]);
 
   const activeUsersCount = useMemo(
     () => users.filter((u) => (u.access_tier || "blocked") !== "blocked").length,
@@ -117,6 +145,18 @@ export default function AdminPage() {
       setFetching(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB] flex items-center justify-center">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#0B1220] text-[#E5E7EB]">

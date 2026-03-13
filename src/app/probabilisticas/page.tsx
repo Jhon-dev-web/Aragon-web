@@ -1005,12 +1005,14 @@ function ProbabilisticasContent() {
           >
             Menu lateral
           </button>
-          <Link
-            href="/admin"
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#374151] text-[#93C5FD] hover:bg-[#1F2937] transition-colors"
-          >
-            Admin
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="px-3 py-2 rounded-lg text-xs font-medium border border-[#374151] text-[#93C5FD] hover:bg-[#1F2937] transition-colors"
+            >
+              Admin
+            </Link>
+          )}
           <button
             type="button"
             onClick={handleAtualizarRanking}

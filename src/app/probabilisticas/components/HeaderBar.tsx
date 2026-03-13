@@ -11,7 +11,7 @@ export type HeaderBarProps = {
   planExpiryText: string;
   brokerStatus: string;
   onLogout: () => void;
-  /** Exibir link para /admin (apenas para role admin) */
+  /** Exibir link para /admin. Deve ser sempre useAuth().isAdmin — nunca true para usuário não admin. */
   showAdminLink?: boolean;
   /** Código promocional: ícone de presente no header que abre popover para digitar e ativar */
   promoCode?: string;
