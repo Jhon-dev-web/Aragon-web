@@ -8,6 +8,21 @@ import { useAuth } from "./context/AuthContext";
 
 type CheckoutPlan = "advanced" | "pro_plus";
 
+const LIFETIME_BASE_PRICE = 199;
+
+function getInstallmentRate(installments: number): number {
+  if (installments === 1) return 0.0299;
+  if (installments >= 2 && installments <= 6) return 0.0349;
+  return 0.0399;
+}
+
+function getInstallmentValues(installments: number): { total: number; perInstallment: number } {
+  const rate = getInstallmentRate(installments);
+  const total = LIFETIME_BASE_PRICE * (1 + rate) + 0.49;
+  const perInstallment = total / installments;
+  return { total, perInstallment };
+}
+
 const strategyItems = ["MHI", "3 Mosqueteiros", "Padrão 23", "Outras estratégias probabilísticas"];
 
 const benefitItems = [
@@ -54,29 +69,39 @@ const proofItems = [
 
 const faqItems = [
   {
-    question: "O que é o Aragon?",
+    question: "O Plano Avançado é assinatura?",
     answer:
-      "O Aragon é um sistema de catalogação estratégica para opções binárias que analisa histórico, organiza padrões e ajuda você a encontrar melhores oportunidades com mais rapidez.",
+      "Sim. O Plano Avançado é uma assinatura recorrente de R$47,90/mês, com renovação automática enquanto você mantiver o pagamento em dia.",
   },
   {
-    question: "Preciso ter experiência?",
+    question: "O Plano Avançado tem teste de 3 dias?",
     answer:
-      "Não. A página e o painel foram pensados para facilitar a leitura mesmo para quem ainda está ganhando prática com catalogação e estratégias probabilísticas.",
+      "Sim. Você começa com 3 dias de teste no Plano Avançado para conhecer o Aragon na prática antes de seguir com a assinatura.",
   },
   {
-    question: "Quais estratégias o sistema analisa?",
+    question: "O Plano Vitalício pode ser parcelado?",
     answer:
-      "O sistema trabalha com estratégias como MHI, 3 Mosqueteiros, Padrão 23 e outras estratégias probabilísticas organizadas dentro da plataforma.",
+      "Sim. O Plano Vitalício é pagamento único de R$199, com possibilidade de parcelar no cartão diretamente na página de pagamento do Asaas.",
   },
   {
-    question: "O acesso vitalício inclui o robô futuro?",
+    question: "O que está incluído no Plano Vitalício?",
     answer:
-      "Sim. O plano vitalício já destaca o benefício futuro de acesso ao robô quando esse recurso for liberado.",
+      "O Vitalício libera acesso permanente ao sistema de catalogação do Aragon, com todas as estratégias organizadas em um só lugar.",
+  },
+  {
+    question: "O Vitalício inclui acesso ao robô futuramente?",
+    answer:
+      "Sim. O Plano Vitalício já contempla o acesso ao robô quando esse recurso for disponibilizado.",
+  },
+  {
+    question: "Quais formas de pagamento posso usar?",
+    answer:
+      "Os pagamentos são processados pelo Asaas, com opções como PIX e cartão de crédito. No Vitalício, você pode parcelar o pagamento no cartão.",
   },
   {
     question: "Como recebo acesso após a compra?",
     answer:
-      "Depois da confirmação do pagamento, o acesso é liberado no fluxo da plataforma. Se você já estiver logado, segue direto para a etapa de pagamento.",
+      "Depois da confirmação do pagamento pelo Asaas, o acesso é liberado dentro do Aragon. Se você já estiver logado, segue direto para o fluxo de pagamento.",
   },
 ];
 
@@ -175,6 +200,7 @@ export default function HomePage() {
   const [pendingPlan, setPendingPlan] = useState<CheckoutPlan | null>(null);
   const [cpfInput, setCpfInput] = useState("");
   const [summary, setSummary] = useState<PublicSummary | null | undefined>(undefined);
+  const [vitalicioInstallments, setVitalicioInstallments] = useState<number>(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,7 +247,10 @@ export default function HomePage() {
 
     try {
       setCheckoutPlanLoading(pendingPlan);
-      const checkout = await billingCheckout(pendingPlan, digits, "UNDEFINED");
+      const isVitalicio = pendingPlan === "pro_plus";
+      const paymentMethod = isVitalicio ? "CREDIT_CARD" : "UNDEFINED";
+      const installmentCount = isVitalicio ? vitalicioInstallments : undefined;
+      const checkout = await billingCheckout(pendingPlan, digits, paymentMethod, installmentCount);
       const url = checkout.checkout_url ?? checkout.init_point;
       if (!url) throw new Error("Checkout sem URL de redirecionamento");
       setShowCpfModal(false);
@@ -398,6 +427,13 @@ export default function HomePage() {
                 Leitura pronta em segundos
               </span>
 
+              <div className="mt-4 inline-flex max-w-full items-center gap-2 rounded-2xl border border-[#22C55E]/30 bg-[#08150E]/90 px-4 py-3 text-left shadow-[0_12px_30px_rgba(34,197,94,0.08)]">
+                <span className="rounded-full bg-[#22C55E]/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#86EFAC]">
+                  Teste de 3 dias
+                </span>
+                <p className="text-sm font-medium text-[#E2E8F0]">Comece com 3 dias de teste no plano avançado.</p>
+              </div>
+
               <div className="mt-5 flex flex-wrap gap-2">
                 {strategyItems.map((item) => (
                   <span
@@ -410,7 +446,7 @@ export default function HomePage() {
               </div>
 
               <h2 className="mt-6 max-w-3xl text-4xl font-black tracking-tight text-[#F8FAFC] sm:text-5xl lg:text-6xl">
-                Encontre estratégias probabilísticas sem perder tempo na catalogação manual.
+                Assine o Plano Avançado ou garanta o Vitalício com parcelamento no cartão.
               </h2>
 
               <p className="mt-5 max-w-2xl text-base leading-7 text-[#94A3B8] sm:text-lg">
@@ -420,14 +456,25 @@ export default function HomePage() {
 
               <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-[#1E293B] bg-[#0B1220]/90 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#64748B]">Plano mensal</p>
-                  <p className="mt-2 text-2xl font-bold text-[#F8FAFC]">R$47,90</p>
-                  <p className="mt-1 text-xs text-[#94A3B8]">Comece hoje.</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#64748B]">Plano Avançado</p>
+                    <span className="rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#86EFAC]">
+                      3 dias de teste
+                    </span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-[#F8FAFC]">R$47,90/mês</p>
+                  <p className="mt-1 text-xs text-[#94A3B8]">Assinatura recorrente com 3 dias de teste.</p>
+                  <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[#64748B]">
+                    Assinatura recorrente
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-[#7C3AED]/40 bg-[#140F25]/90 p-4 shadow-[0_0_30px_rgba(124,58,237,0.18)]">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#C4B5FD]">Plano vitalício</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#C4B5FD]">Plano Vitalício</p>
                   <p className="mt-2 text-2xl font-bold text-[#F8FAFC]">R$199</p>
-                  <p className="mt-1 text-xs text-[#C4B5FD]">Pagamento único.</p>
+                  <p className="mt-1 text-xs text-[#C4B5FD]">Pagamento único com parcelamento disponível.</p>
+                  <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[#C4B5FD]">
+                    Pagamento único • Parcelamento no cartão
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-[#22C55E]/30 bg-[#08150E]/90 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-[#86EFAC]">Benefício futuro</p>
@@ -439,16 +486,25 @@ export default function HomePage() {
               <div className="mt-8 grid gap-4 sm:max-w-xl sm:grid-cols-2">
                 {renderPlanButton({
                   plan: "advanced",
-                  label: "Assinar agora",
-                  microcopy: "Acesso rápido e liberação após confirmação.",
+                  label: "Assinar Plano Avançado",
+                  microcopy: "Assinatura recorrente de R$47,90/mês com 3 dias de teste.",
                   variant: "secondary",
                 })}
                 {renderPlanButton({
                   plan: "pro_plus",
-                  label: "Quero acesso vitalício",
-                  microcopy: "Plano vitalício com benefício futuro do robô.",
+                  label: "Comprar Vitalício",
+                  microcopy: "Pagamento único de R$199 com possibilidade de parcelar no cartão.",
                   variant: "primary",
                 })}
+              </div>
+
+              <div className="mt-4 grid max-w-xl gap-3 text-xs text-[#94A3B8] sm:grid-cols-2">
+                <p className="text-center sm:text-left">
+                  Plano Avançado: assinatura recorrente de R$47,90/mês. Cobrança mensal automática enquanto o plano estiver ativo.
+                </p>
+                <p className="text-center sm:text-left">
+                  Plano Vitalício: pagamento único de R$199 com parcelamento disponível no cartão, processado pelo Asaas.
+                </p>
               </div>
 
               <div className="mt-6 grid gap-3 text-sm text-[#CBD5E1] sm:max-w-2xl sm:grid-cols-2">
@@ -458,7 +514,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-start gap-3 rounded-2xl border border-[#1E293B] bg-[#0B1220]/80 px-4 py-3">
                   <span className="mt-0.5 text-[#60A5FA]">•</span>
-                  <p>Veja quais estratégias e cenários merecem sua atenção.</p>
+                  <p>Comece com 3 dias de teste no plano avançado e conheça a plataforma com menos risco.</p>
                 </div>
               </div>
             </div>
@@ -724,16 +780,16 @@ export default function HomePage() {
               <div className="w-full max-w-3xl rounded-[28px] border border-[#1E293B] bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(8,15,30,0.95))] p-6 text-center shadow-[0_20px_60px_rgba(2,6,23,0.45)] sm:p-8">
                 <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Escolha seu acesso</p>
                 <h3 className="mt-3 text-2xl font-bold text-[#F8FAFC] sm:text-3xl">
-                  Entre agora no plano mensal ou garanta o vitalício com benefício futuro.
+                  Comece testando o avançado por 3 dias ou garanta o vitalício direto.
                 </h3>
                 <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#94A3B8] sm:text-base">
-                  Comece no mensal ou aproveite o vitalício para garantir acesso permanente e o benefício futuro do robô.
+                  Entre com menos risco no plano avançado ou aproveite o vitalício para garantir acesso permanente e o benefício futuro do robô.
                 </p>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   {renderPlanButton({
                     plan: "advanced",
-                    label: "Assinar agora",
-                    microcopy: "Acesso rápido com liberação após confirmação.",
+                    label: "Começar teste de 3 dias",
+                    microcopy: "Acesso inicial com período de teste no plano avançado.",
                     variant: "secondary",
                     fullWidth: true,
                   })}
@@ -840,27 +896,53 @@ export default function HomePage() {
             <SectionHeading
               eyebrow="Planos"
               title="Escolha como quer entrar no Aragon"
-              description="Escolha o plano ideal para você e comece a usar a plataforma após a confirmação."
+              description="Comece testando o plano avançado por 3 dias ou entre direto no vitalício para garantir a oferta premium."
             />
 
             <div className="mt-12 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="rounded-[28px] border border-[#1E293B] bg-[#0B1220]/90 p-6 sm:p-8">
-                <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Plano mensal</p>
-                <h3 className="mt-3 text-3xl font-bold text-[#F8FAFC]">R$47,90</h3>
-                <p className="mt-2 text-sm text-[#94A3B8]">Assinatura para começar rápido e acessar a plataforma agora.</p>
+                <div className="flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#64748B]">Plano Avançado</p>
+                  <span className="rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#86EFAC]">
+                    Teste de 3 dias
+                  </span>
+                </div>
+                <h3 className="mt-3 text-3xl font-bold text-[#F8FAFC]">R$47,90/mês</h3>
+                <p className="mt-2 text-sm text-[#94A3B8]">
+                  Assinatura recorrente com 3 dias de teste para conhecer o Aragon na prática.
+                </p>
 
                 <ul className="mt-6 space-y-3 text-sm text-[#CBD5E1]">
-                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Acesso ao sistema de catalogação</span></li>
-                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Estratégias probabilísticas organizadas</span></li>
-                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Análise histórica prática para leitura rápida</span></li>
-                  <li className="flex gap-3"><span className="text-[#22C55E]">✓</span><span>Ideal para quem quer testar e entrar hoje</span></li>
+                  <li className="flex gap-3">
+                    <span className="text-[#22C55E]">✓</span>
+                    <span>Assinatura recorrente de R$47,90/mês</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-[#22C55E]">✓</span>
+                    <span>Período de teste de 3 dias incluso</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-[#22C55E]">✓</span>
+                    <span>Acesso contínuo enquanto a assinatura estiver ativa</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-[#22C55E]">✓</span>
+                    <span>Ideal para começar e entender o sistema</span>
+                  </li>
                 </ul>
+
+                <div className="mt-6 rounded-2xl border border-[#22C55E]/20 bg-[#08150E]/80 p-4">
+                  <p className="text-sm font-semibold text-[#E2E8F0]">Assinatura recorrente pensada para ser sua porta de entrada.</p>
+                  <p className="mt-1 text-sm leading-6 text-[#94A3B8]">
+                    Comece testando por 3 dias, continue com cobrança mensal automática enquanto fizer sentido para você.
+                  </p>
+                </div>
 
                 <div className="mt-8">
                   {renderPlanButton({
                     plan: "advanced",
-                    label: "Assinar agora",
-                    microcopy: "Acesso rápido e liberação após confirmação.",
+                    label: "Assinar Plano Avançado",
+                    microcopy: "Assinatura recorrente de R$47,90/mês com 3 dias de teste.",
                     variant: "secondary",
                     fullWidth: true,
                   })}
@@ -872,11 +954,14 @@ export default function HomePage() {
                   Mais escolhido
                 </div>
 
-                <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Plano vitalício</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Plano Vitalício</p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h3 className="text-4xl font-black text-white">R$199</h3>
-                    <p className="mt-2 text-sm text-[#DDD6FE]">Pagamento único com o melhor custo de entrada da oferta.</p>
+                    <p className="mt-2 text-sm text-[#DDD6FE]">
+                      Pagamento único com possibilidade de parcelar no cartão e melhor custo-benefício no longo prazo.
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-[#E5E7EB]">R$199 à vista ou até 12x no cartão.</p>
                   </div>
                   <div className="rounded-2xl border border-[#22C55E]/30 bg-[#08150E]/80 px-4 py-3 text-sm text-[#D1FAE5]">
                     Inclui acesso ao robô futuramente
@@ -885,29 +970,100 @@ export default function HomePage() {
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Inclui</p>
-                    <p className="mt-2 text-sm leading-6 text-white">Acesso vitalício ao sistema sem renovação mensal.</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Pagamento único</p>
+                    <p className="mt-2 text-sm leading-6 text-white">
+                      Acesso vitalício ao sistema sem renovação mensal. Você paga uma vez e segue usando.
+                    </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Diferencial</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#C4B5FD]">Parcelamento</p>
                     <p className="mt-2 text-sm leading-6 text-white">
-                      Melhor oportunidade para quem já quer entrar com visão de longo prazo.
+                      Possibilidade de parcelar o valor no cartão diretamente no checkout do Asaas.
                     </p>
                   </div>
                 </div>
 
                 <ul className="mt-8 space-y-3 text-sm text-[#F5F3FF]">
-                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Tudo do plano mensal</span></li>
-                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Acesso vitalício sem renovação</span></li>
-                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Benefício futuro do robô quando for liberado</span></li>
-                  <li className="flex gap-3"><span className="text-[#86EFAC]">✓</span><span>Melhor custo-benefício para quem quer entrar de vez</span></li>
+                  <li className="flex gap-3">
+                    <span className="text-[#86EFAC]">✓</span>
+                    <span>Pagamento único de R$199 com possibilidade de parcelamento no cartão</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-[#86EFAC]">✓</span>
+                    <span>Acesso vitalício sem renovação mensal</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-[#86EFAC]">✓</span>
+                    <span>Benefício futuro do robô incluído quando for liberado</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-[#86EFAC]">✓</span>
+                    <span>Melhor custo-benefício no longo prazo para quem quer entrar de vez</span>
+                  </li>
                 </ul>
+
+                <div className="mt-8 space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#E5E7EB]">
+                      Simule o parcelamento no cartão
+                    </p>
+                    <p className="mt-1 text-xs text-[#DDD6FE]">
+                      Veja o valor aproximado das parcelas já com as taxas da operadora incluídas.
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <label className="flex flex-col gap-1 text-xs text-[#E5E7EB] sm:w-1/2">
+                        <span className="font-semibold uppercase tracking-[0.18em] text-[#C4B5FD]">Número de parcelas</span>
+                        <select
+                          value={vitalicioInstallments}
+                          onChange={(e) => setVitalicioInstallments(Number(e.target.value))}
+                          className="mt-1 w-full rounded-xl border border-[#4C1D95] bg-[#0F1020] px-3 py-2 text-sm text-white outline-none transition-colors focus:border-[#A855F7] focus:ring-2 focus:ring-[#A855F7]/30"
+                        >
+                          {Array.from({ length: 12 }).map((_, idx) => {
+                            const installments = idx + 1;
+                            const { perInstallment } = getInstallmentValues(installments);
+                            return (
+                              <option key={installments} value={installments}>
+                                {installments}x de{" "}
+                                {perInstallment.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </label>
+                      <div className="mt-3 flex-1 rounded-xl bg-black/20 px-3 py-2 text-xs text-[#E5E7EB] sm:mt-0 sm:text-right">
+                        {(() => {
+                          const { total, perInstallment } = getInstallmentValues(vitalicioInstallments);
+                          return (
+                            <>
+                              <p>
+                                {vitalicioInstallments}x de{" "}
+                                {perInstallment.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}{" "}
+                                ({total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} no total)
+                              </p>
+                              <p className="mt-1 text-[11px] text-[#C4B5FD]">
+                                Parcelamento no cartão com taxas da operadora já incluídas.
+                              </p>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mt-8">
                   {renderPlanButton({
                     plan: "pro_plus",
-                    label: "Quero acesso vitalício",
-                    microcopy: "Plano vitalício com benefício futuro e pagamento único.",
+                    label: "Comprar Vitalício",
+                    microcopy: "Pagamento único de R$199 com parcelamento disponível no cartão.",
                     variant: "primary",
                     fullWidth: true,
                   })}
@@ -952,8 +1108,8 @@ export default function HomePage() {
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               {renderPlanButton({
                 plan: "advanced",
-                label: "Assinar agora",
-                microcopy: "Acesso rápido com liberação após confirmação.",
+                label: "Começar teste de 3 dias",
+                microcopy: "Comece com 3 dias de teste no plano avançado.",
                 variant: "secondary",
                 fullWidth: true,
               })}
