@@ -600,11 +600,13 @@ function ProbabilisticasContent() {
     setError(null);
     setDetailsAsset(null);
     try {
+      const effectiveTopN =
+        maxAssets > 0 ? Math.min(topN, maxAssets) : undefined;
       const data = await fetchCatalogRanking(
         {
           minutes: windowMinutes,
           min_setups: minSetups,
-          top_n: Math.min(topN, maxAssets),
+          top_n: effectiveTopN,
           include_otc: includeOtc,
           include_open: includeOpen,
           strategy_id: strategy,
