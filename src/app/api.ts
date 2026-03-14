@@ -3,8 +3,10 @@
  * - Dev: default "/api" usa proxy do Next (rewrite → API_BACKEND_URL).
  * - Prod (app.aragon.app): use NEXT_PUBLIC_API_URL=https://api.aragon.app para chamar o subdomínio da API.
  */
+const PROD_API_FALLBACK = "https://aragon-api.onrender.com";
+
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "/api";
+  process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? PROD_API_FALLBACK : "/api");
 
 // ----- Auth token (JWT) — usa AuthStore (aragon_token) -----
 import {
@@ -979,12 +981,21 @@ export type AuthTokenResponse = {
   user_id: string;
 };
 
+function networkErrorMessage(): string {
+  return "Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente em instantes.";
+}
+
 export async function authLogin(email: string, password: string): Promise<AuthTokenResponse> {
-  const r = await fetch(`${API_BASE}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  let r: Response;
+  try {
+    r = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    throw new Error(networkErrorMessage());
+  }
   const text = await r.text();
   if (!r.ok) {
     let detail = text;
@@ -1021,11 +1032,16 @@ export async function authRegister(
   const body: Record<string, string> = { email, password };
   if (name != null && String(name).trim()) body.name = String(name).trim();
   if (phone != null && String(phone).trim()) body.phone = String(phone).trim();
-  const r = await fetch(`${API_BASE}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let r: Response;
+  try {
+    r = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(networkErrorMessage());
+  }
   const text = await r.text();
   if (!r.ok) {
     let detail = text;
